@@ -33,7 +33,9 @@ export const formsRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .output(formDetailOutputSchema)
     .query(async ({ input, ctx }) => {
+      console.log("ninput id" ,input.id, "ctx user id",ctx.user!.id)
       const form = await formService.getByIdForUser(input.id, ctx.user!.id);
+      console.log(form)
       if (!form) throw domainError("FORM_NOT_FOUND", "Form not found", "NOT_FOUND");
       return form;
     }),

@@ -1,7 +1,7 @@
 // packages/trpc/server/context.ts
 // We import Request type from express but do NOT import express itself —
 // the API app wires the real factories.  This file only defines the shape.
-import type { Request, Response, CookieOptions } from "express";
+import type { Request, CookieOptions } from "express";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 
 export type CreateCookieFn = (name: string, value: string, options?: CookieOptions) => void;

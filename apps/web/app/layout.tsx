@@ -1,31 +1,18 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-});
-
-export const metadata: Metadata = {
-  title: "Streamyst",
-  description: "Media Forwarding",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <GlobalProviders>{children}</GlobalProviders>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Your standard meta, links, fonts */}
+      </head>
+      {/* Set a dark/neutral desktop matte background color here */}
+      <body style={{ margin: 0, padding: 0, backgroundColor: "#1e1a15", minHeight: "100vh" }}>
+        <GlobalProviders>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", width: "100%" }}>
+            {children}
+          </div>
+        </GlobalProviders>
       </body>
     </html>
   );

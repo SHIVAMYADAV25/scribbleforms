@@ -28,12 +28,12 @@ export const authRouter = router({
       const { user, token } = await authService.signup(input, ip, ua);
       setAuthCookie(ctx, token);
 
-      safeEnqueue(getEmailQueue(), "welcome", {
-        type: "welcome",
-        userId: user.id,
-        email: user.email,
-        name: user.fullName ?? "",
-      });
+      // safeEnqueue(getEmailQueue(), "welcome", {
+      //   type: "welcome",
+      //   userId: user.id,
+      //   email: user.email,
+      //   name: user.fullName ?? "",
+      // });
 
       return { id: user.id, email: user.email, fullName: user.fullName ?? null, plan: user.plan };
     }),
@@ -43,8 +43,10 @@ export const authRouter = router({
     .input(loginInputSchema)
     .output(loginOutputSchema)
     .mutation(async ({ input, ctx }) => {
+      // console.log("hello")
       const ip = (ctx.req as any).ip ?? "";
       const ua = ctx.req.headers["user-agent"] ?? "";
+      // console.log("hello")
       const { user, token } = await authService.login(input, ip, ua);
       setAuthCookie(ctx, token);
       return user;

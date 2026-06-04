@@ -1,0 +1,602 @@
+"use client";
+
+import React, { use, useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import Sidebar from "~/components/Sidebar";
+import { ScribbleButton } from "~/components/scribble/ScribbleButton";
+import { ScribbleCustomInput } from "~/components/scribble/ScribInput";
+import { useFormDetail, usePublishForm, useUnpublishForm, useUpdateForm } from "~/hooks/api/forms";
+import { Calendar, LinkIcon } from "lucide-react";
+import { toast } from "sonner";
+
+interface SharePageProps {
+  params: Promise<{ id: string }>;
+}
+
+const API  = process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000";
+const APP  = process.env.NEXT_PUBLIC_APP_URL  ?? "http://localhost:3000";
+
+export default function SharePage({ params }: SharePageProps) {
+  const { id: formId } = use(params);
+
+  // ── DATA & MUTATIONS (from file 2) ──────────────────────────────
+  const { data: form, isLoading }   = useFormDetail(formId);
+  const publishForm                  = usePublishForm(formId);
+  const unpublishForm                = useUnpublishForm(formId);
+  const updateForm                   = useUpdateForm(formId);
+
+  // ── LOCAL STATE (from file 2) ───────────────────────────────────
+  const [copied,    setCopied]    = useState(false);
+  const [pwEnabled, setPwEnabled] = useState(false);
+
+  // Visibility radio — default to whatever the form has, fall back to "public"
+  const [visibility, setVisibility] = useState<"public" | "unlisted">(
+    (form?.visibility as "public" | "unlisted") ?? "public"
+  );
+
+  // Keep visibility in sync once form loads
+  useEffect(() => {
+    if (form?.visibility) setVisibility(form.visibility as "public" | "unlisted");
+  }, [form?.visibility]);
+
+  // ── RESPONSIVE SCALE ────────────────────────────────────────────
+  const [scale, setScale] = useState(0.8);
+
+  useEffect(() => {
+    const update = () => {
+      const scaleX = window.innerWidth  / 1250;
+      const scaleY = window.innerHeight / 900;
+      // Cap at 0.8 so large monitors stay pixel-perfect; shrink on small screens
+      setScale(Math.min(scaleX, scaleY, 0.8));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // ── DERIVED VALUES ──────────────────────────────────────────────
+  const slug       = form?.customSlug ?? form?.slug ?? "";
+  const formUrl    = `${APP}/f/${slug}`;
+  const isPublished = form?.status === "published";
+
+  // ── HANDLERS (from file 2) ──────────────────────────────────────
+  function copyLink() {
+    navigator.clipboard.writeText(formUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Link copied!");
+  }
+
+  function handleVisibilityChange(val: "public" | "unlisted") {
+    setVisibility(val);
+    updateForm.mutate({ id: formId, data: { visibility: val } });
+  }
+
+  function handlePublishToggle(checked: boolean) {
+    if (checked) {
+      publishForm.mutate({ id: formId });
+    } else {
+      unpublishForm.mutate({ id: formId });
+    }
+  }
+
+  // ── SOCIAL LINKS ────────────────────────────────────────────────
+  const socialLinks = [
+    {
+      label: "Twitter", color: "#c8e2fa",
+      icon: <svg width="15" height="15" viewBox="0 0 20 20" fill="#1da1f2"><path d="M19 3.5a9.5 9.5 0 01-2.7.74A4.7 4.7 0 0018.5 1.5a9.4 9.4 0 01-3 1.14A4.69 4.69 0 009.8 7c0 .37.04.73.11 1.07A13.3 13.3 0 011.6 3.8a4.69 4.69 0 001.45 6.26A4.67 4.67 0 011 9.57v.06a4.69 4.69 0 003.76 4.6 4.72 4.72 0 01-2.12.08 4.69 4.69 0 004.38 3.26A9.4 9.4 0 011 19a13.3 13.3 0 007.18 2.1c8.62 0 13.34-7.14 13.34-13.34 0-.2 0-.41-.02-.61A9.5 9.5 0 0019 3.5z"/></svg>,
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(formUrl)}`
+    },
+    {
+      label: "Facebook", color: "rgba(255,255,255,0.8)",
+      icon: <svg width="15" height="15" viewBox="0 0 20 20" fill="#1877f2"><path d="M18 10a8 8 0 10-9.25 7.9v-5.6H6.5V10h2.25V8.2c0-2.23 1.33-3.46 3.36-3.46.97 0 1.99.17 1.99.17V7.1h-1.12c-1.1 0-1.45.69-1.45 1.39V10h2.46l-.39 2.3H11.5v5.6A8 8 0 0018 10z"/></svg>,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(formUrl)}`
+    },
+    {
+      label: "WhatsApp", color: "#cff0d0",
+      icon: <svg width="15" height="15" viewBox="0 0 20 20" fill="#25d366"><path d="M10 2a8 8 0 00-6.88 12.06L2 18l4.06-1.07A8 8 0 1010 2zm0 14.5a6.46 6.46 0 01-3.29-.9l-.24-.14-2.41.64.65-2.36-.16-.25A6.5 6.5 0 1110 16.5zm3.58-4.87c-.2-.1-1.17-.58-1.35-.64-.18-.07-.32-.1-.45.1-.13.2-.52.64-.63.77-.12.13-.23.15-.43.05a5.4 5.4 0 01-1.59-1 5.96 5.96 0 01-1.1-1.4c-.11-.2-.01-.3.08-.4l.3-.35c.08-.1.1-.18.16-.3.05-.12.02-.23-.02-.32-.04-.1-.45-1.08-.62-1.48-.16-.39-.32-.33-.44-.34h-.38c-.13 0-.34.05-.52.25-.18.2-.68.66-.68 1.6 0 .95.7 1.86.8 1.99.09.12 1.37 2.1 3.33 2.94.47.2.83.32 1.11.41.47.15.9.13 1.23.08.38-.06 1.17-.48 1.33-.94.17-.46.17-.86.12-.94-.05-.1-.18-.15-.38-.25z"/></svg>,
+      href: `https://wa.me/?text=${encodeURIComponent(formUrl)}`
+    },
+    {
+      label: "Email", color: "rgba(255,255,255,0.8)",
+      icon: <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#ff1111" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 7l8 5 8-5" strokeLinecap="round"/></svg>,
+      href: `mailto:?subject=Fill this form&body=${encodeURIComponent(formUrl)}`
+    },
+  ];
+
+  // ── LOADING STATE ───────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div style={{ backgroundColor: "#fdf6ed", width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: "bold", color: "#2d2416" }}>
+          Loading share configurations...
+        </p>
+      </div>
+    );
+  }
+
+  // ── RENDER ──────────────────────────────────────────────────────
+  return (
+    <div style={{ position: "relative", width: "100vw", height: "100vh", backgroundColor: "#fdf6ed", color: "#2d2416", overflow: "hidden" }}>
+
+      {/* ── BACKGROUND IMAGE ── */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <Image
+          src="/shareBG.png"
+          alt="Notebook Framework Share Background"
+          fill
+          priority
+          className="object-fill"
+        />
+      </div>
+
+      {/* ── RESPONSIVE SCALE WRAPPER ── */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: "125vw",
+          height: "125vh",
+          display: "flex",
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          boxSizing: "border-box",
+          paddingLeft: "76px",
+          paddingTop: "24px",
+          zIndex: 1,
+        }}
+      >
+        <Sidebar activeTab="Design" />
+
+        {/* ── MAIN WORKSPACE ── */}
+        <div style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", paddingLeft: "90px" }}>
+
+          {/* TOP HEADER */}
+          <div
+            style={{
+              width: "100%",
+              height: "110px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingBottom: "8px",
+              marginBottom: "16px",
+              paddingRight: "185px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+              <div style={{ width: "320px", paddingTop: "12px" }}>
+                <h2 style={{ fontFamily: "'Caveat', cursive", fontSize: "36px", margin: "0 0 4px 0", fontWeight: "bold" }}>
+                  Share & Publish
+                </h2>
+                <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: "14px", color: "rgba(45,36,22,0.6)", margin: 0 }}>
+                  Make your form live and start collecting responses.
+                </p>
+              </div>
+
+              <div style={{ position: "relative", width: "240px", height: "125px", marginTop: "56px", marginLeft: "160px" }}>
+                <Image src="/shareBoy.png" alt="Ready to fly!" fill priority style={{ objectFit: "contain" }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingTop: "30px" }}>
+              <ScribbleButton onClick={() => window.open(`/form/${formId}/preview`, "_blank")}>
+                <span style={{ fontSize: "14px" }}>👁</span> Preview Form
+              </ScribbleButton>
+            </div>
+          </div>
+
+          {/* LOWER CONTENT GRID */}
+          <div
+            style={{
+              flex: 1,
+              display: "grid",
+              gridTemplateColumns: "820px 600px",
+              width: "100%",
+              height: "calc(100% - 130px)",
+              overflow: "hidden",
+            }}
+          >
+            {/* ── LEFT COLUMN ── */}
+            <div
+              className="custom-scrollbar"
+              style={{
+                width: "100%",
+                height: "780px",
+                display: "flex",
+                flexDirection: "column",
+                padding: "4px 16px 32px 16px",
+                overflowY: "auto",
+                overflowX: "hidden",
+                boxSizing: "border-box",
+                marginTop: "23px",
+                position: "relative",
+              }}
+            >
+              {/* ── CARD 1: PUBLISH SETTINGS ── */}
+              <div style={{ position: "relative", width: "100%", height: "400px", flexShrink: 0 }}>
+                <Image src="/signupBorderONE.png" alt="Publish settings container" fill priority style={{ objectFit: "fill" }} />
+
+                <div style={{ position: "relative", zIndex: 1, padding: "40px 40px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" }}>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#22c55e", color: "white", fontSize: "12px", fontWeight: "bold" }}>1</div>
+                    <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "16px", fontWeight: "800", color: "#2d2416", margin: 0 }}>Publish Settings</h3>
+                  </div>
+
+                  <p style={{ fontSize: "12px", color: "rgba(45, 36, 22, 0.6)", margin: "0 0 16px 32px", fontWeight: "600" }}>
+                    Choose how you want to share your form.
+                  </p>
+
+                  {/* Visibility Radio Cards — wired to updateForm */}
+                  <div style={{ display: "flex", gap: "16px", paddingLeft: "32px", marginBottom: "20px" }}>
+
+                    {/* Public */}
+                    <label
+                      onClick={() => handleVisibilityChange("public")}
+                      style={{
+                        flex: 1, height: "90px",
+                        border: `1.5px solid ${visibility === "public" ? "#634cc9" : "#c8b8a0"}`,
+                        borderRadius: "8px",
+                        backgroundColor: visibility === "public" ? "rgba(99, 76, 201, 0.02)" : "transparent",
+                        padding: "12px", display: "flex", gap: "10px",
+                        cursor: "pointer", boxSizing: "border-box",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="form-privacy"
+                        checked={visibility === "public"}
+                        onChange={() => handleVisibilityChange("public")}
+                        style={{ accentColor: "#634cc9", marginTop: "3px", cursor: "pointer" }}
+                      />
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontFamily: "'Caveat', cursive", fontSize: "13px", fontWeight: "800", color: "#2d2416" }}>Public</span>
+                          <span style={{ fontSize: "10px", fontWeight: "bold", color: "#22c55e", backgroundColor: "rgba(34, 197, 94, 0.1)", padding: "1px 6px", borderRadius: "99px" }}>Recommended</span>
+                        </div>
+                        <span style={{ fontSize: "11px", color: "rgba(45, 36, 22, 0.5)", fontWeight: "600", lineHeight: "1.3", marginTop: "2px" }}>
+                          Anyone with the link can view and respond to this form.
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Unlisted */}
+                    <label
+                      onClick={() => handleVisibilityChange("unlisted")}
+                      style={{
+                        flex: 1, height: "90px",
+                        border: `1.5px solid ${visibility === "unlisted" ? "#634cc9" : "#c8b8a0"}`,
+                        borderRadius: "8px",
+                        backgroundColor: visibility === "unlisted" ? "rgba(99, 76, 201, 0.02)" : "transparent",
+                        padding: "12px", display: "flex", gap: "10px",
+                        cursor: "pointer", boxSizing: "border-box",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="form-privacy"
+                        checked={visibility === "unlisted"}
+                        onChange={() => handleVisibilityChange("unlisted")}
+                        style={{ accentColor: "#634cc9", marginTop: "3px", cursor: "pointer" }}
+                      />
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontFamily: "'Caveat', cursive", fontSize: "13px", fontWeight: "800", color: "#2d2416" }}>Unlisted</span>
+                        <span style={{ fontSize: "11px", color: "rgba(45, 36, 22, 0.5)", fontWeight: "600", lineHeight: "1.3", marginTop: "2px" }}>
+                          Only people with the link can view and respond.
+                        </span>
+                      </div>
+                    </label>
+
+                  </div>
+
+                  <div style={{ height: "1px", backgroundColor: "rgba(200, 184, 160, 0.3)", width: "calc(100% - 32px)", marginLeft: "32px", marginBottom: "14px" }} />
+
+                  {/* Accept Responses Toggle — wired to publish/unpublish */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingLeft: "32px", paddingRight: "12px", paddingTop: "23px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                      <span style={{ fontFamily: "'Caveat', cursive", fontSize: "13px", fontWeight: "800", color: "#2d2416" }}>Accept Responses</span>
+                      <span style={{ fontSize: "11px", color: "rgba(45, 36, 22, 0.5)", fontWeight: "600" }}>
+                        {isPublished ? "Your form is live and accepting responses." : "Publish your form to start collecting responses."}
+                      </span>
+                    </div>
+
+                    {/* Toggle — green = published */}
+                    <label style={{ position: "relative", display: "inline-block", width: "40px", height: "22px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={isPublished}
+                        disabled={publishForm.isPending || unpublishForm.isPending}
+                        onChange={e => handlePublishToggle(e.target.checked)}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: "absolute", inset: 0,
+                        backgroundColor: isPublished ? "#22c55e" : "#c8b8a0",
+                        borderRadius: "99px",
+                        transition: "0.2s",
+                        opacity: (publishForm.isPending || unpublishForm.isPending) ? 0.6 : 1,
+                      }}>
+                        <span style={{
+                          position: "absolute",
+                          left: "3px",
+                          bottom: "3px",
+                          backgroundColor: "white",
+                          width: "16px",
+                          height: "16px",
+                          borderRadius: "50%",
+                          transition: "0.2s",
+                          transform: isPublished ? "translateX(18px)" : "translateX(0)",
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── DECORATION: Boy Holding Heart ── */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "280px",
+                  left: "185px",
+                  width: "505px",
+                  height: "180px",
+                  zIndex: 10,
+                  pointerEvents: "none",
+                }}
+              >
+                <Image src="/boyholding.png" alt="Boy holding heart decoration" fill priority style={{ objectFit: "contain" }} />
+              </div>
+
+              {/* ── CARD 2: SHARE YOUR FORM ── */}
+              <div style={{ position: "relative", width: "750px", height: "250px", flexShrink: 0, padding: "26px 26px" }}>
+                <Image src="/sharemidouter.png" alt="Share form container" fill priority style={{ objectFit: "fill" }} />
+
+                <div style={{ position: "relative", zIndex: 1, padding: "22px 26px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" }}>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#f5b800", color: "#2d2416", fontSize: "12px", fontWeight: "bold" }}>2</div>
+                    <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "16px", fontWeight: "800", color: "#2d2416", margin: 0 }}>Share Your Form</h3>
+                  </div>
+
+                  <p style={{ fontSize: "12px", color: "rgba(45, 36, 22, 0.6)", margin: "0 0 16px 32px", fontWeight: "600" }}>
+                    Copy the link or share it directly.
+                  </p>
+
+                  {/* Link input + copy button */}
+                  <div style={{ paddingLeft: "32px", marginBottom: "20px", width: "100%", boxSizing: "border-box" }}>
+                    <ScribbleCustomInput
+                      type="text"
+                      readOnly
+                      value={formUrl}
+                      leftIcon={<LinkIcon style={{ width: "14px", height: "14px", color: "rgba(45,36,22,0.4)" }} />}
+                      containerStyle={{ background: "white" }}
+                      style={{ color: "#2d2416", fontWeight: "600" }}
+                    />
+
+                    <div style={{ position: "absolute", right: "36px", top: "75px" }}>
+                      <ScribbleButton
+                        onClick={copyLink}
+                        style={{ height: "30px", padding: "0 14px", fontSize: "12px", backgroundColor: copied ? "#cff0d0" : "#e2d7cc", zIndex: 2, marginTop: "12px" }}
+                      >
+                        {copied ? "Copied! ✓" : "Copy Link"}
+                      </ScribbleButton>
+                    </div>
+                  </div>
+
+                  <span style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "rgba(45, 36, 22, 0.4)", paddingLeft: "32px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                    Or share on
+                  </span>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingLeft: "32px", width: "100%", flexWrap: "wrap" }}>
+                    {socialLinks.map(item => (
+                      <a
+                        key={item.label}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontFamily: "'Caveat', cursive",
+                          display: "flex", alignItems: "center", gap: "8px",
+                          padding: "6px 14px", borderRadius: "6px",
+                          border: "1.2px solid #c8b8a0",
+                          backgroundColor: item.color,
+                          textDecoration: "none", color: "#2d2416",
+                          fontSize: "12px", fontWeight: "700",
+                          transition: "transform 0.1s ease",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-1px)")}
+                        onMouseLeave={e => (e.currentTarget.style.transform = "none")}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </a>
+                    ))}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── CARDS 3 & 4: QR + LIMITS ── */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "330px 390px",
+                  gap: "20px",
+                  width: "100%",
+                  height: "180px",
+                  marginLeft: "23px",
+                  flexShrink: 0,
+                  marginBottom: "4px",
+                }}
+              >
+                {/* QR Code Card */}
+                <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <Image src="/sharebottomleft.png" alt="QR code container" fill priority style={{ objectFit: "fill" }} />
+
+                  <div style={{ position: "relative", zIndex: 1, padding: "23px 35px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" }}>
+                    <span style={{ fontFamily: "'Caveat', cursive", fontSize: "12px", fontWeight: "800", color: "#2d2416", marginBottom: "8px",marginTop:"12px" }}>
+                      Scan QR Code
+                    </span>
+
+                    <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+                      <div style={{ backgroundColor: "#faf4f0", padding: "8px", borderRadius: "8px", border: "1.2px solid #e8ddd0", display: "flex", alignItems: "center", justifyContent: "center", height: "150px", width: "150px", boxSizing: "border-box" }}>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formUrl)}&color=2d2416&bgcolor=faf4f0&qzone=1`}
+                          alt="Form QR Code"
+                          style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Response Limit + Expiry Card — wired to updateForm */}
+                <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <Image src="/shareBottomRight.png" alt="Form limits container" fill priority style={{ objectFit: "fill" }} />
+
+                  <div style={{ position: "relative", zIndex: 1, padding: "40px 60px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", gap: "10px", fontFamily: "'Nunito', sans-serif" }}>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "#2d2416" }}>
+                        Response Limit
+                      </label>
+                      <ScribbleCustomInput
+                        type="number"
+                        placeholder="No limit (e.g. 100)"
+                        style={{ height: "10px", fontSize: "13px" }}
+                        defaultValue={form?.responseLimit ?? ""}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
+                          updateForm.mutate({ id: formId, data: { responseLimit: e.target.value ? Number(e.target.value) : null } })
+                        }
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "#2d2416" }}>
+                        Expiry Date
+                      </label>
+                      <ScribbleCustomInput
+                        type="date"
+                        leftIcon={<Calendar style={{ width: "14px", height: "14px", color: "rgba(45,36,22,0.4)" }} />}
+                        style={{ color: "#2d2416" }}
+                        defaultValue={form?.expiresAt ? new Date(form.expiresAt).toISOString().split("T")[0] : ""}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) =>
+                          updateForm.mutate({ id: formId, data: { expiresAt: e.target.value ? new Date(e.target.value).toISOString() : null } })
+                        }
+                      />
+                    </div>
+
+                    {/* Password protect — from file 2 */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
+                      <label style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "#2d2416" }}>
+                        Password Protect
+                      </label>
+                      <label style={{ position: "relative", display: "inline-block", width: "34px", height: "18px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={pwEnabled}
+                          onChange={e => setPwEnabled(e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0 }}
+                        />
+                        <span style={{ position: "absolute", inset: 0, backgroundColor: pwEnabled ? "#634cc9" : "#c8b8a0", borderRadius: "99px", transition: "0.2s" }}>
+                          <span style={{ position: "absolute", left: "2px", bottom: "2px", backgroundColor: "white", width: "14px", height: "14px", borderRadius: "50%", transition: "0.2s", transform: pwEnabled ? "translateX(16px)" : "translateX(0)" }} />
+                        </span>
+                      </label>
+                    </div>
+
+                    {pwEnabled && (
+                      <ScribbleCustomInput
+                        type="password"
+                        placeholder="Set password..."
+                        style={{ fontSize: "13px"}}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          if (e.target.value) {
+                            updateForm.mutate({ id: formId, data: { password: e.target.value } });
+                            toast.success("Password set!");
+                          }
+                        }}
+                      />
+                    )}
+
+                  </div>
+                </div>
+              </div>
+
+              <style dangerouslySetInnerHTML={{__html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(45, 36, 22, 0.18); border-radius: 99px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(45, 36, 22, 0.35); }
+              `}} />
+
+            </div>
+
+            {/* ── RIGHT COLUMN ── */}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                paddingRight: "16px",
+                overflowY: "auto",
+                overflowX: "hidden",
+                boxSizing: "border-box",
+              }}
+            >
+              {/* Live form preview image */}
+              <div style={{ position: "relative", width: "100%", flexShrink: 0, filter: "drop-shadow(0px 4px 8px rgba(45,36,22,0.04))" }}>
+                <Image src="/shareform.png" alt="Live form preview" width={550} height={560} priority style={{ objectFit: "contain" }} />
+              </div>
+
+              {/* You're all set card */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "240px",
+                  flexShrink: 0,
+                  marginTop: "23px",
+                  filter: "drop-shadow(0px 3px 6px rgba(0,0,0,0.05))",
+                }}
+              >
+                <Image src="/sharebottomCard.png" alt="You're all set!" fill priority style={{ objectFit: "contain" }} />
+
+                {/* Invisible clickable button over the image's CTA area */}
+                <button
+                  onClick={() => {
+                    if (isPublished) {
+                      window.open(formUrl, "_blank");
+                    } else {
+                      publishForm.mutate({ id: formId });
+                    }
+                  }}
+                  disabled={publishForm.isPending}
+                  style={{
+                    position: "absolute",
+                    bottom: "22px",
+                    left: "24px",
+                    width: "120px",
+                    height: "32px",
+                    cursor: publishForm.isPending ? "not-allowed" : "pointer",
+                    opacity: 0,
+                    border: "none",
+                    background: "transparent",
+                  }}
+                  aria-label={isPublished ? "View Live Form" : "Publish Now"}
+                />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

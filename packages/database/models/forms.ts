@@ -1,12 +1,13 @@
 // packages/database/models/forms.ts
 import {
-  pgTable, uuid, varchar, text, boolean,
+  pgTable, uuid, varchar, text, 
   timestamp, integer, pgEnum, jsonb
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./user";
 
 export const formStatusEnum = pgEnum("form_status", ["draft", "published", "archived", "paused"]);
 export const visibilityEnum  = pgEnum("visibility",  ["public", "unlisted"]);
+export const formThemeEnum = pgEnum("form_theme", ["scribble", "anime", "cyber punk", "nature walk", "midnight writter","Ocean Breezer","gaming","startup","event"]);
 
 export const formsTable = pgTable("forms", {
   id:                 uuid("id").primaryKey().defaultRandom(),

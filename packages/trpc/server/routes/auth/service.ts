@@ -30,15 +30,18 @@ export class AuthService {
 
   async login(payload: LoginInput, ipAddress: string, userAgent: string) {
     const user = await this.repository.findUserByEmail(payload.email);
+    console.log(user)
     // Same message for wrong email AND wrong password — prevents user enumeration
     if (!user || !user.salt || !user.password) {
       throw domainError("INVALID_CREDENTIALS", "Wrong email or password", "UNAUTHORIZED");
     }
 
     const hash = this.hashPassword(payload.password, user.salt);
+    console.log(hash + " " + user.password)
     if (hash !== user.password) {
       throw domainError("INVALID_CREDENTIALS", "Wrong email or password", "UNAUTHORIZED");
     }
+    // console.log(hash !== user.password)
 
     const token = randomBytes(64).toString("hex");
     await this.repository.createSession({ userId: user.id, token, ipAddress, userAgent });
