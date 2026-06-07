@@ -495,18 +495,14 @@
 //     </div>
 //   );
 // }
-
 "use client";
 
-import React, { use, useState, useMemo } from "react";
+import React, { use, useState, useMemo, useEffect } from "react";
 import Sidebar from "~/components/Sidebar";
-import { ArrowLeft, Download, Trash2, Search, Calendar, Filter, ChevronDown, CheckCircle, Clock } from "lucide-react";
-import Image from "next/image";
+import { ArrowLeft, Trash2, Calendar } from "lucide-react";
 import { useFormDetail } from "~/hooks/api/forms";
-// import { useResponseList, useDeleteResponse, useExportCsv } from "~/hooks/api/analytics";
+import { useResponseList, useDeleteResponse } from "~/hooks/api";
 
-import { useResponseList,useDeleteResponse } from "~/hooks/api";
-import { ScribbleCheckbox } from "~/components/scribble/ScribbleUI";
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface Field {
   id: string;
@@ -594,9 +590,7 @@ function ResponseKPICard({
       boxSizing: "border-box",
       filter: "drop-shadow(3px 4px 6px rgba(45, 36, 22, 0.06))"
     }}>
-      {/* Upper Title Line Block */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-        {/* Organic Outer Icon Circle Container */}
         <div style={{ 
           width: "43px", 
           height: "43px", 
@@ -612,7 +606,6 @@ function ResponseKPICard({
           {innerIcon}
         </div>
 
-        {/* Central Value Metrics Counters */}
         <div style={{ display: "flex", flexDirection: "column", marginTop: "2px", marginLeft: "12px" }}>
           <span style={{ fontFamily: "'Caveat', cursive", fontSize: "13px", fontWeight: 500, color: "#2d2416" }}>
             {label}
@@ -628,7 +621,6 @@ function ResponseKPICard({
         </div>
       </div>
 
-      {/* Bottom Comparative Status Label */}
       <div style={{ marginLeft: "62px", display: "flex", alignItems: "center", gap: "4px", marginTop: percentage ? "6px" : "16px", fontSize: "11px", fontWeight: "700", color: "rgba(45,36,22,0.55)", fontFamily: "'Caveat', cursive" }}>
         <span style={{ color: trendColor, fontSize: "12px", fontWeight: "900", display: "inline-flex", alignItems: "center" }}>
           {trendIcon === "up" ? "↑" : "↓"}
@@ -648,7 +640,6 @@ function AllFormsTable({
     <div 
       style={{ 
         backgroundColor: "#FFFDF9", 
-        // border: "1.2px solid #2d2416", 
         borderRadius: "16px", 
         padding: "16px 20px", 
         display: "flex", 
@@ -659,11 +650,9 @@ function AllFormsTable({
         fontFamily: "'Caveat', cursive", 
       }}
     >
-      {/* Subheading Navigation Header Tabs from image_a8149c.jpg */}
       <div style={{ display: "flex", gap: "24px", borderBottom: "1.2px solid rgba(45,36,22,0.1)", paddingBottom: "10px", marginBottom: "12px", fontSize: "13px", fontWeight: "bold", fontFamily: "'Caveat', cursive"}}>
         <div style={{ position: "relative", color: "#2d2416", cursor: "pointer" }}>
           <span>All Responses ({filteredResponses.length})</span>
-          {/* Hand-drawn underline squiggle effect marker */}
           <svg width="110" height="6" viewBox="0 0 110 6" fill="none" style={{ position: "absolute", bottom: "-11px", left: 0 }}>
             <path d="M 2 3 C 30 5, 75 1.5, 108 3.5 M 12 4 C 45 4.5, 80 3, 98 4" stroke="#634cc9" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -673,14 +662,10 @@ function AllFormsTable({
         <span style={{ color: "rgba(45,36,22,0.4)", cursor: "pointer" }}>Unstarted (47)</span>
       </div>
 
-      {/* Main Non-Scrolling Table Stage */}
       <div style={{ flex: 1, overflow: "hidden", width: "100%" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(45,36,22,0.12)", color: "rgba(45,36,22,0.5)", fontFamily: "'Nunito', sans-serif", fontWeight: 800 }}>
-              {/* <th style={{ padding: "8px 6px", width: "30px" }}>
-                <ScribbleCheckbox checked={paginatedResponses.length > 0 && paginatedResponses.every((r: UserResponse) => checkedRecords[r.id])} onChange={toggleSelectAll} />
-              </th> */}
               <th style={{ padding: "8px 12px" }}>Respondent</th>
               <th style={{ padding: "8px 12px" }}>Status</th>
               <th style={{ padding: "8px 12px" }}>Submitted</th>
@@ -688,15 +673,12 @@ function AllFormsTable({
             </tr>
           </thead>
           <tbody>
-            {paginatedResponses.map((res: UserResponse, i: number) => (
+            {paginatedResponses.map((res: UserResponse) => (
               <tr 
                 key={res.id} 
                 onClick={() => setSelectedId(res.id)}
                 style={{ borderBottom: "1px dashed rgba(45,36,22,0.06)", backgroundColor: activeInspectionRecord?.id === res.id ? "#FCF6EE" : "transparent", cursor: "pointer" }}
               >
-                {/* <td style={{ padding: "8px 6px" }}>
-                  <ScribbleCheckbox checked={!!checkedRecords[res.id]} onChange={() => setCheckedRecords((p: Record<string, boolean>) => ({ ...p, [res.id]: !p[res.id] }))} />
-                </td> */}
                 <td style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "#fdf3dc", border: "1.2px solid #2d2416", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "12px", color: "#2d2416", flexShrink: 0 }}>
                     {res.nameAnswer?.charAt(0) || "R"}
@@ -722,10 +704,8 @@ function AllFormsTable({
         </table>
       </div>
 
-      {/* ── ARROW BASIC PAGINATION NAVIGATION CONTROLS BAR (FROM GRAPHICS REFERENCE) ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", justifyContent: "space-between", paddingTop: "10px", borderTop: "1.2px solid rgba(45,36,22,0.08)", marginTop: "auto", boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "10px", borderTop: "1.2px solid rgba(45,36,22,0.08)", marginTop: "auto", boxSizing: "border-box" }}>
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          {/* Back arrow */}
           <button 
             disabled={currentPage === 1} 
             onClick={() => setCurrentPage((p: number) => Math.max(p - 1, 1))} 
@@ -734,7 +714,6 @@ function AllFormsTable({
             ←
           </button>
 
-          {/* Pages map indexes bubbles loop selection track */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, idx) => {
               const pageIndexNode = idx + 1;
@@ -765,7 +744,6 @@ function AllFormsTable({
             {totalPages > 5 && <span style={{ fontSize: "11px", color: "rgba(45,36,22,0.4)", fontWeight: "bold" }}>... {totalPages}</span>}
           </div>
 
-          {/* Next arrow */}
           <button 
             disabled={currentPage === totalPages} 
             onClick={() => setCurrentPage((p: number) => Math.min(p + 1, totalPages))} 
@@ -791,12 +769,26 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
   const [currentPage, setCurrentPage] = useState(1);
   const [checkedRecords, setCheckedRecords] = useState<Record<string, boolean>>({});
   const [selectedStatus, setSelectedStatus] = useState("All Status");
+  const [scale, setScale] = useState(0.8);
+
+  // Dynamic Resolution Monitor Matrix Hook
+  useEffect(() => {
+    const handleResize = () => {
+      const baseWidth = 1525; // Base window breakpoint where 0.8 scale fits beautifully
+      const currentWidth = window.innerWidth;
+      const calculatedScale = (currentWidth / baseWidth) * 0.8;
+      setScale(Math.max(calculatedScale, 0.45)); // Safe-clamp boundary limit
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const { data: formDetails, isLoading: formLoading, isError: formError } = useFormDetail(formId);
   const { data: responseData, isLoading: responseLoading, isError: responseError } = useResponseList(formId);
   const deleteResponse = useDeleteResponse(formId);
 
-  // FlatMap paginated responses out of Infinite Query Pages
   const responses = useMemo<UserResponse[]>(() => {
     if (!responseData?.pages) return [];
     return responseData.pages.flatMap((p: any) => p.responses ?? []);
@@ -804,7 +796,6 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
 
   const totalResponsesCount = responseData?.pages[0]?.total ?? responses.length;
 
-  // Filter lists based on target text criteria mapping matches
   const filteredResponses = useMemo(() => {
     return responses.filter(r => 
       r.nameAnswer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -820,7 +811,6 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
     return filteredResponses.slice(startIdx, startIdx + itemsPerPage);
   }, [filteredResponses, currentPage]);
 
-  // Track item targeted for micro inspection view drawer panel
   const activeInspectionRecord = useMemo(() => {
     if (selectedId) return responses.find(r => r.id === selectedId) || null;
     return paginatedResponses[0] || null;
@@ -842,8 +832,18 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
       backgroundImage: "url('/response/BG(2).png')", backgroundSize: "100% 100%", backgroundRepeat: "no-repeat",
       position: "fixed", top: 0, left: 0, overflow: "hidden", boxSizing: "border-box", fontFamily: "'Nunito', sans-serif"
     }}>
-      {/* ── INTERNAL 80% SCALED MONITOR COMPONENT CONTAINER ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, width: "125vw", height: "125vh", display: "flex", transform: "scale(0.8)", transformOrigin: "top left", overflow: "hidden" }}>
+      {/* ── INTERNAL DYNAMIC RESPONSIVE WRAPPER ── */}
+      <div style={{ 
+        position: "absolute", 
+        top: 0, 
+        left: 0, 
+        width: "1920px",        // Fixed virtual coordinate plane coordinates
+        height: "1080px",       
+        display: "flex", 
+        transform: `scale(${scale})`, 
+        transformOrigin: "top left", 
+        overflow: "hidden" 
+      }}>
         
         {/* SIDEBAR NAVIGATION BLOCK */}
         <div style={{ width: "240px", height: "100%", paddingLeft: "65px", paddingTop: "24px", flexShrink: 0 }}>
@@ -851,12 +851,10 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
         </div>
 
         {/* RECONSTRUCTED CENTRAL DATA GRID */}
-        <div 
-        style={{ flex: 1, height: "100%", padding: "45px 50px 60px 140px", display: "flex", flexDirection: "column", boxSizing: "border-box", overflow: "hidden" }}
-        >
+        <div style={{ flex: 1, height: "100%", padding: "45px 50px 60px 140px", display: "flex", flexDirection: "column", boxSizing: "border-box", overflow: "hidden" }}>
           
           {/* ── UPPER CONTROLS ACTION LAYER ── */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "1220px", marginBottom: "35px",marginTop:"16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "1220px", marginBottom: "35px", marginTop: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "rgba(45,36,22,0.6)", fontSize: "14px", fontWeight: 700, cursor: "pointer" }} onClick={() => window.history.back()}>
               <ArrowLeft size={16} /> Back to Dashboard
             </div>
@@ -868,31 +866,17 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ position: "relative", zIndex: 1 }}>
                 <path d="M10 3v10M6 9l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 16h12" strokeLinecap="round"/>
               </svg>
-              <span style={{ position: "relative", zIndex: 1, color: "#2d2416",fontWeight:"100" }}>Export</span>
+              <span style={{ position: "relative", zIndex: 1, color: "#2d2416", fontWeight: "100" }}>Export</span>
             </button>
           </div>
 
           {/* ── KPI GRID ROW CONTAINER ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 320px)", gap: "26px", marginBottom: "20px", width: "1220px", boxSizing: "border-box", position: "relative" }}>
+            {/* FLOATING HANGING BOY ARTWORK */}
+            <div style={{ position: "absolute", top: "-175px", left: "425px", zIndex: 10, pointerEvents: "none" }}>
+              <img src="/response/ropBoy.png" alt="Hanging Boy" style={{ width: "390px", height: "240px", mixBlendMode: "darken" }} />
+            </div>
 
-          {/* 👇 FLOATING HANGING BOY ARTWORK */}
-  <div style={{
-    position: "absolute",
-    top: "-175px",       // Pulls the top of the rope up into the blank area under the dashboard link
-    left: "425px",       // Positions the rope directly in the gap between card 1 and card 2
-    zIndex: 10,          // Ensures it layers beautifully above cards and background layers
-    pointerEvents: "none" // Ensures you can still click things underneath if needed
-  }}>
-    <img 
-      src="/response/ropBoy.png"  
-      alt="Hanging Boy"
-      style={{
-        width: "390px",              // Adjust width to match the visual scale of your dashboard
-        height: "240px",
-        mixBlendMode: "darken"       // Perfect trick if the asset has a white background instead of transparent!
-      }} 
-    />
-  </div>
             <ResponseKPICard 
               label="Total Responses" 
               value={totalResponsesCount.toLocaleString()} 
@@ -920,9 +904,7 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
               strokeColor="#74c99a"
               innerIcon={
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <circle cx="12" cy="12" r="6" />
-                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
                   <path d="M12 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" fill="#2e7d32" opacity="0.15" />
                 </svg>
               } 
@@ -937,9 +919,7 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
               trendColor="#ef6c00"
               bg="#fff3e0"
               strokeColor="#f5a623"
-              innerIcon={
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef6c00" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 15 15" /><circle cx="12" cy="12" r="1" fill="#ef6c00" /></svg>
-              } 
+              innerIcon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef6c00" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 15 15" /><circle cx="12" cy="12" r="1" fill="#ef6c00" /></svg>} 
             />
 
             <ResponseKPICard 
@@ -951,47 +931,18 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
               trendColor="#c62828"
               bg="#ffebee"
               strokeColor="#e87777"
-              innerIcon={
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c62828" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" strokeWidth="1.6" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
-              } 
+              innerIcon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c62828" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" strokeWidth="1.6" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>} 
             />
           </div>
 
-          {/* ── QUICK SELECTION FILTERING SHELF (EXACT ALIGNMENT MATCH TO image_a90481.png) ── */}
-          <div 
-            style={{ 
-              position: "relative", 
-              padding: "10px 14px", 
-              marginBottom: "20px", 
-              marginTop: "12px", 
-              width: "1350px", 
-              display: "flex", 
-              alignItems: "center", 
-              boxSizing: "border-box" ,
-              height:"58px",
-              fontFamily: "'Caveat', cursive", 
-            }}
-          >
-            {/* Outer Organic Border enclosing all search parameters */}
-            <svg 
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }} 
-              viewBox="0 0 1220 52" 
-              preserveAspectRatio="none" 
-              fill="none"
-            >
-              <path 
-                d="M3 4 C400 1.5, 800 3.5, 1217 3 C1219.5 10, 1218.5 26, 1217.5 48 C850 49.5, 400 48.5, 4 49 C1.5 36, 2 22, 3 4 Z" 
-                stroke="#5a4a30" 
-                strokeWidth="1.2" 
-                fill="none" 
-                strokeOpacity="0.6"
-              />
+          {/* ── QUICK SELECTION FILTERING SHELF ── */}
+          <div style={{ position: "relative", padding: "10px 14px", marginBottom: "20px", marginTop: "12px", width: "1340px", display: "flex", alignItems: "center", boxSizing: "border-box", height:"58px", fontFamily: "'Caveat', cursive" }}>
+            <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }} viewBox="0 0 1220 52" preserveAspectRatio="none" fill="none">
+              <path d="M3 4 C400 1.5, 800 3.5, 1217 3 C1219.5 10, 1218.5 26, 1217.5 48 C850 49.5, 400 48.5, 4 49 C1.5 36, 2 22, 3 4 Z" stroke="#5a4a30" strokeWidth="1.2" fill="none" strokeOpacity="0.6" />
               <path d="M4 6 Q25 3 350 4 T800 3 T1216 5 Q1218 12 1217 28 T1216 46 Q1180 49 850 48 T250 49 T5 45 Q2 30 3 24 Z" stroke="#5a4a30" strokeWidth="0.8" fill="none" strokeOpacity="0.3"/>
             </svg>
 
             <div style={{ display: "flex", gap: "12px", alignItems: "center", width: "100%", position: "relative", zIndex: 1 }}>
-              
-              {/* 1. Search Box input wrapper */}
               <div style={{ position: "relative", width: 250, height: 38 }}>
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 250 34" fill="none" preserveAspectRatio="none">
                   <path d="M4 4 Q40 2, 125 2.5 T246 4 Q249 8, 248 17 T246 30 Q190 32, 125 31.5 T4 29 Q1 20, 2 17 Z" fill="#fffcf7" stroke="#2d2416" strokeWidth="0.8" opacity="0.3"/>
@@ -1008,7 +959,6 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
                 />
               </div>
 
-              {/* 3. All Status Selection Dropdown */}
               <div style={{ position: "relative", height: 38, width: 150 }}>
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 140 34" fill="none" preserveAspectRatio="none">
                   <path d="M4 3 Q25 2, 70 2.5 T136 4 Q138 8, 137 17 T136 30 Q100 31.5, 55 31 T4 29 Q2 20, 3 17 Z" fill="#fffcf7" stroke="#2d2416" strokeWidth="0.8" opacity="0.3"/>
@@ -1028,18 +978,16 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
                 </div>
               </div>
 
-              {/* 4. Date Range Picker Component */}
               <div style={{ fontFamily: "'Caveat', cursive", position: "relative", height: 38, width: 180 }}>
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 180 34" fill="none" preserveAspectRatio="none">
                   <path d="M3 4 Q40 2, 95 2.5 T176 4 Q178 8, 177 17 T176 30 Q120 32, 75 31.5 T4 29 Q2 20, 3 17 Z" fill="#fffcf7" stroke="#2d2416" strokeWidth="0.8" opacity="0.3"/>
                 </svg>
-                <div style={{ width: "100%", height: "100%", position: "relative", zIndex: 1, display: "flex", alignItems: "center", padding: "0 12px", gap: 6, fontSize: 12, fontWeight: 600, color: "#2d2416"  }}>
+                <div style={{ width: "100%", height: "100%", position: "relative", zIndex: 1, display: "flex", alignItems: "center", padding: "0 12px", gap: 6, fontSize: 12, fontWeight: 600, color: "#2d2416" }}>
                   <Calendar size={13} style={{ color: "#5a4a30" }} />
                   <span>May 10 – May 16</span>
                 </div>
               </div>
 
-              {/* 5. More Filters Action Trigger Toggle Button */}
               <div style={{ position: "relative", height: 38, width: 160, marginLeft: "auto" }}>
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 130 34" fill="none" preserveAspectRatio="none">
                   <path d="M4 4 Q30 2, 80 2.5 T120 4 Q122 8, 121 17 T120 30 Q85 32, 50 31.5 T4 29 Q2 20, 3 17 Z" fill="transparent" stroke="#2d2416" strokeWidth="0.8" opacity="0.4"/>
@@ -1054,23 +1002,37 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "860px 470px", gap: "30px", width: "1220px", height: "560px" }}>
-            <AllFormsTable 
-              filteredResponses={filteredResponses}
-              paginatedResponses={paginatedResponses}
-              checkedRecords={checkedRecords}
-              setCheckedRecords={setCheckedRecords}
-              toggleSelectAll={toggleSelectAll}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              totalPages={totalPages}
-              itemsPerPage={itemsPerPage}
-              activeInspectionRecord={activeInspectionRecord}
-              setSelectedId={setSelectedId}
-              deleteResponse={deleteResponse}
-            />
+          {/* ── DATA GRID CONTAINMENT ZONE ── */}
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "860px 470px", 
+            gap: "30px", 
+            width: "1350px", 
+            height: "560px", 
+            maxHeight: "560px",
+            overflow: "hidden"
+          }}>
+            
+            {/* Left Side Container (Table Scroll) */}
+            <div className="custom-scribble-scroll" style={{ height: "100%", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              <AllFormsTable 
+                filteredResponses={filteredResponses}
+                paginatedResponses={paginatedResponses}
+                checkedRecords={checkedRecords}
+                setCheckedRecords={setCheckedRecords}
+                toggleSelectAll={toggleSelectAll}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                activeInspectionRecord={activeInspectionRecord}
+                setSelectedId={setSelectedId}
+                deleteResponse={deleteResponse}
+              />
+            </div>
 
-            <div style={{ backgroundColor: "#FFFDF9", border: "1px solid #fff", borderRadius: "14px", padding: "20px", filter: "drop-shadow(3px 4px 6px rgba(45, 36, 22, 0.06))", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", position: "relative" }}>
+            {/* Right Side Detail Card */}
+            <div style={{ backgroundColor: "#FFFDF9", border: "1px solid #fff", borderRadius: "14px", padding: "20px", filter: "drop-shadow(3px 4px 6px rgba(45, 36, 22, 0.06))", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", position: "relative", overflowX: "visible", overflowY: "hidden" }}>
               <div style={{ position: "absolute", top: "-10px", left: "40%", width: "60px", height: "16px", backgroundColor: "#d1c4e9", opacity: 0.7, transform: "rotate(-2deg)" }} />
               
               {activeInspectionRecord ? (
@@ -1091,9 +1053,10 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
                     <div><strong>Time Taken:</strong><br />{Math.round(activeInspectionRecord.timeToCompleteMs / 1000)} seconds</div>
                   </div>
 
-                  <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "4px" ,fontFamily: "'Caveat', cursive", }}>
-                    {formDetails?.fields?.map((field: Field, i: number) => (
-                      <div key={field.id} style={{ border: "1px solid rgba(45,36,22,0.1)", borderRadius: "8px", padding: "10px", backgroundColor: "#fff" }}>
+                  {/* Scrollable Answers List */}
+                  <div className="custom-scribble-scroll" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "8px" ,fontFamily: "'Caveat', cursive" }}>
+                    {formDetails?.fields?.map((field: any, i: number) => (
+                      <div key={field.id} style={{ border: "1px solid rgba(45,36,22,0.1)", borderRadius: "8px", padding: "10px", backgroundColor: "#fff", filter: "drop-shadow(1px 2px 3px rgba(45,36,22,0.02))" }}>
                         <div style={{ fontSize: "11px", fontWeight: "bold", color: "rgba(45,36,22,0.5)", marginBottom: "2px" }}>{i + 1}. {field.label}</div>
                         <div style={{ fontSize: "12px", fontWeight: "bold", color: "#2d2416" }}>
                           {field.type === "email" && activeInspectionRecord.emailAnswer}
@@ -1111,6 +1074,24 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Caveat', cursive", fontSize: "20px", color: "rgba(45,36,22,0.4)" }}>Select a response node to inspect answers</div>
               )}
             </div>
+
+            {/* 🎨 Mini Injected Stylesheet for Organic Sketch Scrollbars */}
+            <style>{`
+              .custom-scribble-scroll::-webkit-scrollbar {
+                width: 6px;
+              }
+              .custom-scribble-scroll::-webkit-scrollbar-track {
+                background: rgba(45, 36, 22, 0.04);
+                border-radius: 10px;
+              }
+              .custom-scribble-scroll::-webkit-scrollbar-thumb {
+                background-color: rgba(90, 74, 48, 0.4);
+                border-radius: 10px;
+              }
+              .custom-scribble-scroll::-webkit-scrollbar-thumb:hover {
+                background-color: rgba(90, 74, 48, 0.7);
+              }
+            `}</style>
           </div>
 
         </div>

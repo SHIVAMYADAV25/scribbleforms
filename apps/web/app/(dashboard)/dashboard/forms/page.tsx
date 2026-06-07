@@ -1,37 +1,145 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "~/components/Sidebar"; 
-import { Search, SlidersHorizontal, Plus, Eye, BarChart3, Link2, MoreHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, Eye, BarChart3, Link2, MoreHorizontal, Trash2, Copy, AlertCircle, CheckCircle2 } from "lucide-react";
 import { ScribbleButton } from "~/components/scribble/ScribbleButton";
 import Image from "next/image";
+import Link from "next/link";
+import { useFormList, useCreateForm, useDeleteForm, useDuplicateForm } from "~/hooks/api/forms";
+
+// ─── THEMED ALERT TOAST TYPES ───
+type ToastType = "success" | "error" | "info";
+interface ToastState {
+  message: string;
+  type: ToastType;
+  id: number;
+}
 
 export default function FormPage() {
   const [activeTab, setActiveTab] = useState("All Forms");
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const cardsPerPage = 12; // 4 columns * 3 rows max per page layout view
+  const [toasts, setToasts] = useState<ToastState[]>([]);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  
+  const cardsPerPage = 12;
 
-  const cardsData = [
-    { id: 1, type: "bar", title: "Anime Expo 2024 Feedback", status: "Published", statusColor: "#e1f5fe", textColor: "#0288d1", updated: "Updated 2 days ago", count: 312, tapeColor: "#ffccd5" },
-    { id: 2, type: "line", title: "Customer Satisfaction Survey", status: "Published", statusColor: "#e8f5e9", textColor: "#2e7d32", updated: "Updated 5 days ago", count: 584, tapeColor: "#c8e6c9" },
-    { id: 3, type: "pie", title: "Event Registration Form", status: "Unlisted", statusColor: "#fff3e0", textColor: "#ef6c00", updated: "Updated 1 week ago", count: 128, tapeColor: "#ffe0b2" },
-    { id: 4, type: "pencil", title: "Product Feedback Form", status: "Draft", statusColor: "#f3e5f5", textColor: "#7b1fa2", updated: "Updated 3 hours ago", count: 0, tapeColor: "#e1bee7" },
-    { id: 5, type: "nps", title: "NPS Survey", status: "Published", statusColor: "#e8f5e9", textColor: "#2e7d32", updated: "Updated 2 weeks ago", count: 256, tapeColor: "#ffccd5" },
-    { id: 6, type: "checkbox", title: "Bug Report Form", status: "Draft", statusColor: "#f3e5f5", textColor: "#7b1fa2", updated: "Updated 4 days ago", count: 0, tapeColor: "#c5cae9" },
-    { id: 7, type: "wave", title: "Workshop Feedback", status: "Unlisted", statusColor: "#fff3e0", textColor: "#ef6c00", updated: "Updated 1 week ago", count: 76, tapeColor: "#ffccd5" },
-    { id: 8, type: "mail", title: "Contact Us Form", status: "Published", statusColor: "#e8f5e9", textColor: "#2e7d32", updated: "Updated 3 weeks ago", count: 93, tapeColor: "#c8e6c9" },
-    { id: 9, type: "stars", title: "Course Rating Review", status: "Published", statusColor: "#e8f5e9", textColor: "#2e7d32", updated: "Updated 1 day ago", count: 420, tapeColor: "#c8e6c9" },
-    { id: 10, type: "funnel", title: "Checkout Drop-off Form", status: "Published", statusColor: "#e1f5fe", textColor: "#0288d1", updated: "Updated 3 days ago", count: 89, tapeColor: "#ffccd5" },
-    { id: 11, type: "target", title: "Feature Goal Feedback", status: "Unlisted", statusColor: "#fff3e0", textColor: "#ef6c00", updated: "Updated 6 days ago", count: 154, tapeColor: "#ffe0b2" },
-    { id: 12, type: "donut", title: "Demographics Breakdown", status: "Draft", statusColor: "#f3e5f5", textColor: "#7b1fa2", updated: "Updated 5 hours ago", count: 0, tapeColor: "#e1bee7" },
-  ];
+  // ─── REAL BACKEND CONNECTION HOOKS ───
+  const { data, isLoading, isError, error, refetch } = useFormList({ search: search || undefined });
+  const createForm = useCreateForm();
+  const deleteForm = useDeleteForm();
+  const duplicateForm = useDuplicateForm();
 
-  // Calculate dynamic paginated view window bounds
-  const totalPages = Math.ceil(cardsData.length / cardsPerPage);
+  // Flatten paginated pages array cleanly from backend response stream
+  const allForms = data?.pages.flatMap((p: any) => p.forms) ?? [];
+
+  // Internal structural theme matching toaster utility
+  const showToast = (message: string, type: ToastType = "success") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { message, type, id }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
+  // Close context dropdown menus safely on outside window clicks
+  useEffect(() => {
+    const handleOutsideClick = () => setOpenDropdownId(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  // ─── FIX: ARRANGE DESIGNS BY VIEW INDEX TO PREVENT REPETITIONS ───
+  const getCardThemingMeta = (gridIndex: number) => {
+    const assetLibrary = [
+      { type: "bar", statusColor: "#e1f5fe", textColor: "#0288d1", tapeColor: "#ffccd5" },
+      { type: "line", statusColor: "#e8f5e9", textColor: "#2e7d32", tapeColor: "#c8e6c9" },
+      { type: "pie", statusColor: "#fff3e0", textColor: "#ef6c00", tapeColor: "#ffe0b2" },
+      { type: "pencil", statusColor: "#f3e5f5", textColor: "#7b1fa2", tapeColor: "#e1bee7" },
+      { type: "nps", statusColor: "#e8f5e9", textColor: "#2e7d32", tapeColor: "#ffccd5" },
+      { type: "checkbox", statusColor: "#f3e5f5", textColor: "#7b1fa2", tapeColor: "#c5cae9" },
+      { type: "wave", statusColor: "#fff3e0", textColor: "#ef6c00", tapeColor: "#ffccd5" },
+      { type: "mail", statusColor: "#e8f5e9", textColor: "#2e7d32", tapeColor: "#c8e6c9" },
+      { type: "stars", statusColor: "#e8f5e9", textColor: "#2e7d32", tapeColor: "#c8e6c9" },
+      { type: "funnel", statusColor: "#e1f5fe", textColor: "#0288d1", tapeColor: "#ffccd5" },
+      { type: "target", statusColor: "#fff3e0", textColor: "#ef6c00", tapeColor: "#ffe0b2" },
+      { type: "donut", statusColor: "#f3e5f5", textColor: "#7b1fa2", tapeColor: "#e1bee7" }
+    ];
+    
+    // Always returns a unique index from 0 to 11 depending on its position on the grid
+    return assetLibrary[gridIndex % assetLibrary.length];
+  };
+
+  // ─── FILTER ROW INTERACTIVE IMPLEMENTATION ───
+  const filteredForms = allForms.filter((form: any) => {
+    const statusLower = form.status?.toLowerCase() || "draft";
+    const visibilityLower = form.visibility?.toLowerCase() || "public";
+
+    if (activeTab === "All Forms") return true;
+    if (activeTab === "Drafts") return statusLower === "draft";
+    if (activeTab === "Published") return statusLower === "published";
+    if (activeTab === "Unlisted") return visibilityLower === "unlisted";
+    return true;
+  });
+
+  // Dynamic status tag total counts for your filter row
+  const totalCount = allForms.length;
+  const draftsCount = allForms.filter((f: any) => f.status?.toLowerCase() === "draft").length;
+  const publishedCount = allForms.filter((f: any) => f.status?.toLowerCase() === "published").length;
+  const unlistedCount = allForms.filter((f: any) => f.visibility?.toLowerCase() === "unlisted").length;
+
+  // Dynamic Pagination Metrics Framework
+  const totalPages = Math.ceil(filteredForms.length / cardsPerPage) || 1;
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
-  const currentCards = cardsData.slice(indexOfFirstCard, indexOfLastCard);
+  const currentCards = filteredForms.slice(indexOfFirstCard, indexOfLastCard);
 
+  // ─── MUTATION ACTION DRIVERS ───
+  const handleCreateForm = () => {
+    createForm.mutate(
+      { title: "Untitled Form", visibility: "public" },
+      {
+        onSuccess: (newForm) => {
+          showToast(`"${newForm?.title || 'Form'}" scribbled successfully onto workspace!`);
+          refetch();
+        },
+        onError: (err: any) => showToast(err?.message || "Failed to create dynamic board.", "error")
+      }
+    );
+  };
+
+  const handleDuplicateForm = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateForm.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          showToast(`Duplicated "${title}" cleanly.`);
+          refetch();
+        },
+        onError: (err: any) => showToast(err?.message || "Error copying form canvas.", "error")
+      }
+    );
+  };
+
+  const handleDeleteForm = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Wipe "${title}" from your sketches permanently?`)) {
+      deleteForm.mutate(
+        { id },
+        {
+          onSuccess: () => {
+            showToast(`Discarded "${title}" layout container workspace.`, "info");
+            refetch();
+          },
+          onError: (err: any) => showToast(err?.message || "Failed to wipe sketch document.", "error")
+        }
+      );
+    }
+  };
+
+  // ─── ORIGINAL EXACT SVG RENDER CONDITIONAL SWITCH ───
   const renderCardVisualSVG = (type: string) => {
     switch (type) {
       case "bar":
@@ -151,6 +259,11 @@ export default function FormPage() {
     }
   };
 
+  // ─── ERROR ROUTING LAYOUT ───
+  if (isError) {
+    return <SketchError message={error?.message || "Could not successfully sync your doodle canvas from workspace servers."} />;
+  }
+
   return (
     <div
       style={{
@@ -168,6 +281,26 @@ export default function FormPage() {
         fontFamily: "'Nunito', sans-serif",
       }}
     >
+      {/* ── CUSTOM ARCHITECTURAL SKETCH ALERTS TOASTER SYSTEM ── */}
+      <div style={{ position: "fixed", bottom: "30px", right: "30px", display: "flex", flexDirection: "column", gap: "10px", zIndex: 1000 }}>
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            style={{
+              display: "flex", alignItems: "center", gap: "10px", padding: "14px 20px",
+              backgroundColor: t.type === "error" ? "#fff9f7" : "#fdfbf7",
+              border: `1.5px dashed ${t.type === "error" ? "#f4c2b0" : t.type === "info" ? "#b4c6ef" : "#c2e6c4"}`,
+              borderRadius: "12px", boxShadow: "4px 4px 0px rgba(45,36,22,0.15)",
+              fontSize: "14px", fontWeight: 700, color: "#2d2416", transform: "rotate(-0.5deg)",
+              minWidth: "265px", animation: "sketchToastIn 0.2s ease-out forwards"
+            }}
+          >
+            {t.type === "error" ? <AlertCircle style={{ color: "#e64a19" }} size={16} /> : <CheckCircle2 style={{ color: "#2e7d32" }} size={16} />}
+            <span>{t.message}</span>
+          </div>
+        ))}
+      </div>
+
       {/* ── INTERNAL 80% WORKSPACE WRAPPER ── */}
       <div
         style={{
@@ -219,30 +352,11 @@ export default function FormPage() {
                   My Forms
                 </h2>
                 <span style={{ color: "#a78bfa", fontSize: "20px" }}>
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.9 }}>
-  {/* Hand-drawn sketchy fill effect */}
-  <path 
-    d="M12 20.5S3 14 3 8.5A4.5 4.5 0 0 1 11.5 5.5c.2.3.4.7.5 1 .1-.3.3-.7.5-1A4.5 4.5 0 0 1 21 8.5c0 5.5-9 12-9 12z" 
-    fill="#a78bfa" 
-    fillOpacity="0.4"
-  />
-  {/* Organic, slightly imperfect scribble outline */}
-  <path 
-    d="M12 21C11.5 20.6 3 14 3 8.5A4.5 4.5 0 0 1 11.5 5.5Q12 6.5 12.5 5.5A4.5 4.5 0 0 1 21 8.5C21 14 12.5 20.6 12 21Z" 
-    stroke="#2d2416" 
-    strokeWidth="1.5" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-  />
-  {/* Small sketchy inner highlight curve to emphasize the hand-drawn feel */}
-  <path 
-    d="M6 8.5A1.5 1.5 0 0 1 8.5 7" 
-    stroke="#fff" 
-    strokeWidth="1.2" 
-    strokeLinecap="round" 
-  />
-</svg>
-
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.9 }}>
+                    <path d="M12 20.5S3 14 3 8.5A4.5 4.5 0 0 1 11.5 5.5c.2.3.4.7.5 1 .1-.3.3-.7.5-1A4.5 4.5 0 0 1 21 8.5c0 5.5-9 12-9 12z" fill="#a78bfa" fillOpacity="0.4" />
+                    <path d="M12 21C11.5 20.6 3 14 3 8.5A4.5 4.5 0 0 1 11.5 5.5Q12 6.5 12.5 5.5A4.5 4.5 0 0 1 21 8.5C21 14 12.5 20.6 12 21Z" stroke="#2d2416" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M6 8.5A1.5 1.5 0 0 1 8.5 7" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
                 </span>
               </div>
               <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "rgba(45, 36, 22, 0.6)", fontWeight: 500 }}>
@@ -256,6 +370,8 @@ export default function FormPage() {
                 <input
                   type="text"
                   placeholder="Search forms..."
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                   style={{
                     padding: "8px 36px 8px 12px",
                     borderRadius: "8px",
@@ -271,59 +387,30 @@ export default function FormPage() {
 
               <ScribbleButton
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  backgroundColor: "rgba(255,255,255,0.6)",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px",
+                  borderRadius: "8px", border: "1px solid rgba(0,0,0,0.15)", backgroundColor: "rgba(255,255,255,0.6)",
+                  fontSize: "13px", fontWeight: 600, cursor: "pointer",
                 }}
               >
                 <SlidersHorizontal style={{ width: "14px", height: "14px" }} /> Filter
               </ScribbleButton>
 
               <ScribbleButton
+                onClick={handleCreateForm}
+                disabled={createForm.isPending}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  backgroundColor: "#c7b9ff",
-                  color: "#1a150e",
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px",
+                  borderRadius: "8px", border: "1px solid rgba(0,0,0,0.15)", backgroundColor: "#c7b9ff",
+                  color: "#1a150e", fontSize: "13px", fontWeight: "bold", cursor: "pointer",
                   boxShadow: "2px 2px 0px rgba(0,0,0,0.15)",
                 }}
               >
-                <Plus style={{ width: "16px", height: "16px" }} /> Create New Form
+                <Plus style={{ width: "16px", height: "16px" }} /> {createForm.isPending ? "Doodling..." : "Create New Form"}
               </ScribbleButton>
 
               {/* ── THE HANGING BOY DECORATIVE ASSET ANCHOR ── */}
-              <div 
-                style={{ 
-                  position: "absolute",
-                  top: "4px",            
-                  left: "35px",           
-                  width: "150px", 
-                  height: "180px",
-                  pointerEvents: "none",
-                  zIndex: 20
-                }}
-              >
-                <Image 
-                  src="/form/holdingBoy.png" 
-                  alt="Scribble doodle character hanging down" 
-                  fill
-                  priority
-                  style={{ objectFit: "contain" }}
-                />
+              <div style={{ position: "absolute", top: "4px", left: "35px", width: "150px", height: "180px", pointerEvents: "none", zIndex: 20 }}>
+                <Image src="/form/holdingBoy.png" alt="Scribble doodle character hanging down" fill priority style={{ objectFit: "contain" }} />
               </div>
             </div>
           </div>
@@ -331,65 +418,32 @@ export default function FormPage() {
           {/* HAND-DRAWN SKETCH FILTER ROW CONTAINER */}
           <div 
             style={{ 
-              display: "flex", 
-              alignItems: "center",
-              gap: "12px", 
-              border: "1px solid rgba(45, 36, 22, 0.15)", 
-              borderRadius: "10px",
-              padding: "6px 8px", 
-              marginBottom: "30px",
-              backgroundColor: "rgba(255, 255, 255, 0.4)",
-              width: "max-content",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.02)"
+              display: "flex", alignItems: "center", gap: "12px", border: "1px solid rgba(45, 36, 22, 0.15)", 
+              borderRadius: "10px", padding: "6px 8px", marginBottom: "30px", backgroundColor: "rgba(255, 255, 255, 0.4)",
+              width: "max-content", boxShadow: "inset 0 1px 2px rgba(0,0,0,0.02)"
             }}
           >
             {[
-              { name: "All Forms", count: 12, activeBg: "#dcd4ff", activeColor: "#2d2416", circleBg: "transparent", circleBorder: "rgba(0,0,0,0.3)" },
-              { name: "Drafts", count: 4, activeBg: "#f3e5f5", activeColor: "#7b1fa2", circleBg: "#fff", circleBorder: "rgba(0,0,0,0.15)" },
-              { name: "Published", count: 6, activeBg: "#e8f5e9", activeColor: "#2e7d32", circleBg: "#fff", circleBorder: "rgba(46, 125, 50, 0.3)" },
-              { name: "Unlisted", count: 2, activeBg: "#fff3e0", activeColor: "#ef6c00", circleBg: "#fff", circleBorder: "rgba(239, 108, 0, 0.3)" },
-              { name: "Archived", count: 0, activeBg: "#f5f5f5", activeColor: "rgba(0,0,0,0.5)", circleBg: "#fff", circleBorder: "rgba(0,0,0,0.15)" }
-            ].map((tab, idx) => {
+              { name: "All Forms", count: totalCount, activeBg: "#dcd4ff", activeColor: "#2d2416", circleBg: "transparent", circleBorder: "rgba(0,0,0,0.3)" },
+              { name: "Drafts", count: draftsCount, activeBg: "#f3e5f5", activeColor: "#7b1fa2", circleBg: "#fff", circleBorder: "rgba(0,0,0,0.15)" },
+              { name: "Published", count: publishedCount, activeBg: "#e8f5e9", activeColor: "#2e7d32", circleBg: "#fff", circleBorder: "rgba(46, 125, 50, 0.3)" },
+              { name: "Unlisted", count: unlistedCount, activeBg: "#fff3e0", activeColor: "#ef6c00", circleBg: "#fff", circleBorder: "rgba(239, 108, 0, 0.3)" }
+            ].map((tab) => {
               const isActive = activeTab === tab.name;
               return (
                 <button
                   key={tab.name}
                   onClick={() => { setActiveTab(tab.name); setCurrentPage(1); }}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: isActive ? tab.activeColor : "rgba(45, 36, 22, 0.7)",
-                    cursor: "pointer",
-                    backgroundColor: isActive ? tab.activeBg : "transparent",
-                    padding: "6px 16px",
-                    borderRadius: "8px",
-                    border: isActive ? "1px solid rgba(0, 0, 0, 0.1)" : "1px solid transparent",
-                    outline: "none",
-                    fontFamily: "'Nunito', sans-serif",
-                    transition: "all 0.15s ease",
-                    boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.05)" : "none"
+                    display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", fontWeight: 700,
+                    color: isActive ? tab.activeColor : "rgba(45, 36, 22, 0.7)", cursor: "pointer",
+                    backgroundColor: isActive ? tab.activeBg : "transparent", padding: "6px 16px",
+                    borderRadius: "8px", border: isActive ? "1px solid rgba(0, 0, 0, 0.1)" : "1px solid transparent",
+                    outline: "none", transition: "all 0.15s ease",
                   }}
                 >
                   <span style={{ letterSpacing: "0.01em" }}>{tab.name}</span>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "11px",
-                      fontWeight: 800,
-                      color: "#2d2416",
-                      backgroundColor: tab.circleBg,
-                      border: `1px solid ${tab.circleBorder}`,
-                      borderRadius: "50%",
-                      width: "20px",
-                      height: "20px",
-                      lineHeight: 1
-                    }}
-                  >
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: "#2d2416", backgroundColor: tab.circleBg, border: `1px solid ${tab.circleBorder}`, borderRadius: "50%", width: "20px", height: "20px", lineHeight: 1 }}>
                     {tab.count}
                   </span>
                 </button>
@@ -397,108 +451,159 @@ export default function FormPage() {
             })}
           </div>
 
-          {/* SCRIBBLED CARDS GRID */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gridTemplateRows: "repeat(3, 1fr)", 
-              gap: "24px",
-              flex: 1,
-              alignContent: "start",
-            }}
-          >
-            {currentCards.map((card, index) => (
-              <div
-                key={`${card.id}-${index}`}
-                style={{
-                  backgroundColor: "#fefbf5",
-                  border: "1px dashed rgba(0,0,0,0.2)",
-                  borderRadius: "12px",
-                  padding: "20px 16px 12px 16px",
-                  position: "relative",
-                  boxShadow: "2px 4px 12px rgba(0,0,0,0.03)",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  minHeight: "160px",
-                }}
-              >
-                {/* Decorative Sticky Tape Effect */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "-8px",
-                    left: "35%",
-                    width: "50px",
-                    height: "16px",
-                    backgroundColor: card.tapeColor,
-                    opacity: 0.6,
-                    transform: "rotate(-2deg)",
-                  }}
-                />
+          {/* DYNAMIC VIEW CONTAINER ARCHITECTURE */}
+          {isLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px", flex: 1, alignContent: "start" }}>
+              {Array.from({ length: 8 }).map((_, i) => <SketchCardSkeleton key={i} />)}
+            </div>
+          ) : currentCards.length === 0 ? (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "2px dashed #c4b8a8", borderRadius: "16px", backgroundColor: "rgba(255,255,255,0.2)" }}>
+              <p style={{ fontFamily: "'Caveat', cursive", fontSize: "24px", color: "#2d2416", opacity: 0.6, margin: "0 0 12px 0" }}>Empty sketch workspace pad!</p>
+              <ScribbleButton onClick={handleCreateForm} style={{ padding: "8px 16px", backgroundColor: "#c7b9ff", borderRadius: "8px" }}>
+                Add New Record Canvas
+              </ScribbleButton>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(3, 1fr)", gap: "24px", flex: 1, alignContent: "start" }}>
+              {currentCards.map((card: any, idx: number) => {
+                // FIX: Get theme matching sequence index safely from 0 to 11 on the current active page session window
+                const themeMeta = getCardThemingMeta(idx);
+                const isDropdownOpen = openDropdownId === card.id;
+                const statusLower = card.status?.toLowerCase() || "draft";
+                const isPublished = statusLower === "published";
 
-                {/* Title & Options Bar */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                    <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: 700, color: "#2d2416", maxWidth: "85%" }}>
-                      {card.title}
-                    </h4>
-                    <MoreHorizontal style={{ width: "16px", height: "16px", color: "rgba(0,0,0,0.4)", cursor: "pointer" }} />
-                  </div>
-
-                  {/* Status Badge */}
-                  <span
+                return (
+                  <div
+                    key={card.id}
                     style={{
-                      backgroundColor: card.statusColor,
-                      color: card.textColor,
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      textTransform: "uppercase",
+                      backgroundColor: "#fefbf5", border: "1px dashed rgba(0,0,0,0.2)", borderRadius: "12px",
+                      padding: "20px 16px 12px 16px", position: "relative", boxShadow: "2px 4px 12px rgba(0,0,0,0.03)",
+                      display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "160px",
                     }}
                   >
-                    {card.status}
-                  </span>
-                  <p style={{ fontSize: "11px", color: "rgba(0,0,0,0.4)", margin: "8px 0 0 0" }}>{card.updated}</p>
-                </div>
+                    {/* Decorative Sticky Tape Effect */}
+                    <div
+                      style={{
+                        position: "absolute", top: "-8px", left: "35%", width: "50px", height: "16px",
+                        backgroundColor: themeMeta.tapeColor, opacity: 0.6, transform: "rotate(-2deg)",
+                      }}
+                    />
 
-                {/* Graphical Sparkline Metric & Response Analytics Counter */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", minHeight: "35px" }}>
-                    {renderCardVisualSVG(card.type)}
+                    {/* Title & Options Bar */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", position: "relative" }}>
+                        <Link href={`/dashboard/forms/${card.id}/build`} style={{ textDecoration: "none", flex: 1, maxWidth: "85%" }}>
+                          <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: 700, color: "#2d2416" }}>
+                            {card.title}
+                          </h4>
+                        </Link>
+                        
+                        <div style={{ position: "relative" }}>
+                          <MoreHorizontal 
+                            style={{ width: "16px", height: "16px", color: "rgba(0,0,0,0.4)", cursor: "pointer" }} 
+                            onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isDropdownOpen ? null : card.id); }}
+                          />
+                          
+                          {/* FLOATING ACTION OVERLAY DROPDOWN */}
+                          {isDropdownOpen && (
+                            <div style={{ position: "absolute", top: "20px", right: 0, backgroundColor: "#fff", border: "1.5px solid #2d2416", borderRadius: "8px", boxShadow: "3px 3px 0px rgba(0,0,0,0.15)", zIndex: 100, minWidth: "120px", padding: "4px 0" }}>
+                              <div 
+                                onClick={(e) => handleDuplicateForm(card.id, card.title, e)}
+                                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "12px", color: "#2d2416", cursor: "pointer" }}
+                              >
+                                <Copy size={12} /> Duplicate
+                              </div>
+                              <div 
+                                onClick={(e) => handleDeleteForm(card.id, card.title, e)}
+                                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "12px", color: "#dc2626", cursor: "pointer", borderTop: "1px dashed rgba(0,0,0,0.08)" }}
+                              >
+                                <Trash2 size={12} /> Delete
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Badges Matching Custom Schemes */}
+                      <span
+                        style={{
+                          backgroundColor: isPublished ? "#e8f5e9" : "#f3e5f5", 
+                          color: isPublished ? "#2e7d32" : "#7b1fa2",
+                          fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", textTransform: "uppercase",
+                        }}
+                      >
+                        {card.status || "Draft"}
+                      </span>
+                      <span style={{ fontSize: "10px", color: "rgba(0,0,0,0.4)", marginLeft: "6px", border: "1px solid rgba(0,0,0,0.1)", padding: "1px 4px", borderRadius: "3px" }}>
+                        {card.visibility || "public"}
+                      </span>
+                      <p style={{ fontSize: "11px", color: "rgba(0,0,0,0.4)", margin: "8px 0 0 0" }}>
+                        {card.updatedAt ? `Updated ${new Date(card.updatedAt).toLocaleDateString()}` : "Updated recently"}
+                      </p>
+                    </div>
+
+                    {/* Graphical Sparkline Metric & Response Analytics Counter */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", minHeight: "35px" }}>
+                        {renderCardVisualSVG(themeMeta.type)}
+                      </div>
+
+                      <div style={{ textAlign: "center", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "50%", width: "42px", height: "42px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "bold", display: "block", lineHeight: 1 }}>{card.totalResponses || card.count || 0}</span>
+                        <span style={{ fontSize: "7px", color: "rgba(0,0,0,0.5)" }}>res</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Card Utility Micro-actions Toolbar */}
+                    <div style={{ borderTop: "1px dashed rgba(0,0,0,0.08)", marginTop: "12px", paddingTop: "8px", display: "flex", justifyContent: "space-between", color: "rgba(45, 36, 22, 0.5)" }}>
+                      <Link href={`/dashboard/forms/${card.id}/build`} style={{ color: "inherit" }}>
+                      <svg 
+  width="14" 
+  height="14" 
+  viewBox="0 0 24 24" 
+  fill="none" 
+  stroke="currentColor" 
+  strokeWidth="1.5" 
+  strokeLinecap="round" 
+  strokeLinejoin="round"
+  style={{ opacity: 0.85 }}
+>
+  {/* Hammer Handle (Diagonal from center to bottom-left) */}
+  <line x1="11" y1="13" x2="4" y2="20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+  
+  {/* Secure Rubber/Wood Handle Grip Overlay */}
+  <line x1="8.5" y1="15.5" x2="4.5" y2="19.5" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" opacity="0.2" />
+
+  {/* Connection Wedge/Neck */}
+  <rect x="11.5" y="10.5" width="2" height="2" transform="rotate(45 12.5 11.5)" fill="currentColor" />
+
+  {/* Hammer Head Assembly (Top-Left Claw to Top-Right Striking Face) */}
+  <g transform="rotate(45 14 10)">
+    {/* Main Solid Metal Block */}
+    <rect x="11" y="8" width="6" height="4" rx="1" fill="currentColor" />
+    
+    {/* Extended Striking Face (Right side) */}
+    <path d="M17 9 L19 9 L19 11 L17 11 Z" fill="currentColor" />
+    <path d="M19 8.5 L20 9 L20 11 L19 11.5 Z" fill="currentColor" opacity="0.7" />
+    
+    {/* Deep Curved Claw (Left side) */}
+    <path d="M11 8.5 C8 8.5 6 10.5 5 13 C6.5 11.5 9 11 11 11.5 Z" fill="currentColor" />
+  </g>
+</svg>
+                      </Link>
+                      <Link href={`/dashboard/forms/${card.id}/analytics`} style={{ color: "inherit" }}><BarChart3 style={{ width: "14px", height: "14px" }} /></Link>
+                      <Link href={`/dashboard/forms/${card.id}/share`} style={{ color: "inherit" }}><Link2 style={{ width: "14px", height: "14px" }} /></Link>
+                    </div>
                   </div>
-
-                  <div style={{ textAlign: "center", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "50%", width: "42px", height: "42px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    <span style={{ fontSize: "12px", fontWeight: "bold", display: "block", lineHeight: 1 }}>{card.count}</span>
-                    <span style={{ fontSize: "7px", color: "rgba(0,0,0,0.5)" }}>res</span>
-                  </div>
-                </div>
-
-                {/* Bottom Card Utility Micro-actions Toolbar */}
-                <div
-                  style={{
-                    borderTop: "1px dashed rgba(0,0,0,0.08)",
-                    marginTop: "12px",
-                    paddingTop: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    color: "rgba(45, 36, 22, 0.5)",
-                  }}
-                >
-                  <Eye style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <BarChart3 style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                  <Link2 style={{ width: "14px", height: "14px", cursor: "pointer" }} />
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* BOTTOM PAGINATION FOOTER CONTROL */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", marginTop: "auto", paddingTop: "20px" }}>
             <span style={{ fontSize: "12px", color: "rgba(0,0,0,0.4)", marginRight: "auto" }}>
-              Showing {indexOfFirstCard + 1} to {Math.min(indexOfLastCard, cardsData.length)} of {cardsData.length} forms
+              Showing {indexOfFirstCard + 1} to {Math.min(indexOfLastCard, filteredForms.length)} of {filteredForms.length} forms
             </span>
             <button 
               disabled={currentPage === 1}
@@ -513,14 +618,8 @@ export default function FormPage() {
                 key={i + 1}
                 onClick={() => setCurrentPage(i + 1)}
                 style={{ 
-                  border: "none", 
-                  backgroundColor: currentPage === i + 1 ? "#c7b9ff" : "transparent", 
-                  width: "24px", 
-                  height: "24px", 
-                  borderRadius: "4px", 
-                  fontSize: "12px", 
-                  fontWeight: "bold",
-                  cursor: "pointer"
+                  border: "none", backgroundColor: currentPage === i + 1 ? "#c7b9ff" : "transparent", 
+                  width: "24px", height: "24px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold", cursor: "pointer"
                 }}
               >
                 {i + 1}
@@ -536,6 +635,55 @@ export default function FormPage() {
             </button>
           </div>
         </div>
+      </div>
+      
+      {/* Global CSS Animation Core Injection */}
+      <style>{`
+        @keyframes sketchToastIn {
+          from { transform: translateY(15px) rotate(1deg); opacity: 0; }
+          to { transform: translateY(0) rotate(-0.5deg); opacity: 1; }
+        }
+        @keyframes sketchLineShimmer {
+          0% { background-position: -150px 0; }
+          100% { background-position: 150px 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── SHIMMERING HANDWRITTEN PLUG CARDS SKETCH SKELETON ───
+function SketchCardSkeleton() {
+  return (
+    <div
+      style={{
+        backgroundColor: "rgba(254,251,245,0.5)", border: "1px dashed rgba(0,0,0,0.15)", borderRadius: "12px",
+        padding: "20px 16px 12px 16px", minHeight: "160px", display: "flex", flexDirection: "column", justifyContent: "space-between"
+      }}
+    >
+      <div>
+        <div style={{ width: "65%", height: "14px", backgroundColor: "rgba(45,36,22,0.08)", borderRadius: "4px", marginBottom: "8px", animation: "sketchLineShimmer 1.6s infinite linear" }} />
+        <div style={{ width: "35%", height: "10px", backgroundColor: "rgba(45,36,22,0.04)", borderRadius: "3px" }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ width: "45px", height: "18px", backgroundColor: "rgba(45,36,22,0.04)", borderRadius: "4px" }} />
+        <div style={{ width: "30px", height: "30px", border: "1px dashed rgba(0,0,0,0.1)", borderRadius: "50%" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── THEMED SCREEN ERROR LAYOUT ───
+function SketchError({ message }: { message: string }) {
+  return (
+    <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fdf8f0" }}>
+      <div style={{ position: "relative", border: "1.5px solid #f4c2b0", borderRadius: "12px", padding: "32px 40px", backgroundColor: "#fff9f7", transform: "rotate(-1deg)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", maxWidth: "360px", boxShadow: "3px 4px 12px rgba(239,108,0,0.1)" }}>
+        <div style={{ position: "absolute", top: "-10px", left: "30px", width: "50px", height: "18px", backgroundColor: "#ffe0cc", opacity: 0.8, transform: "rotate(-2deg)" }} />
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e64a19" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <h3 style={{ fontSize: "20px", fontWeight: "bold", color: "#2d2416", margin: 0, fontFamily: "'Caveat', cursive" }}>Something scribbled wrong!</h3>
+        <p style={{ fontSize: "13px", color: "rgba(45,36,22,0.6)", margin: 0, textAlign: "center", lineHeight: 1.5 }}>{message}</p>
       </div>
     </div>
   );

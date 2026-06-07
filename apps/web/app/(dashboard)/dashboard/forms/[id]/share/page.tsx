@@ -2,7 +2,6 @@
 
 import React, { use, useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import Sidebar from "~/components/Sidebar";
 import { ScribbleButton } from "~/components/scribble/ScribbleButton";
 import { ScribbleCustomInput } from "~/components/scribble/ScribInput";
@@ -14,20 +13,19 @@ interface SharePageProps {
   params: Promise<{ id: string }>;
 }
 
-const API  = process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000";
-const APP  = process.env.NEXT_PUBLIC_APP_URL  ?? "http://localhost:3000";
+const APP = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export default function SharePage({ params }: SharePageProps) {
   const { id: formId } = use(params);
 
-  // ── DATA & MUTATIONS (from file 2) ──────────────────────────────
-  const { data: form, isLoading }   = useFormDetail(formId);
-  const publishForm                  = usePublishForm(formId);
-  const unpublishForm                = useUnpublishForm(formId);
-  const updateForm                   = useUpdateForm(formId);
+  // ── DATA & MUTATIONS ─────────────────────────────────────────────
+  const { data: form, isLoading } = useFormDetail(formId);
+  const publishForm = usePublishForm(formId);
+  const unpublishForm = useUnpublishForm(formId);
+  const updateForm = useUpdateForm(formId);
 
-  // ── LOCAL STATE (from file 2) ───────────────────────────────────
-  const [copied,    setCopied]    = useState(false);
+  // ── LOCAL STATE ──────────────────────────────────────────────────
+  const [copied, setCopied] = useState(false);
   const [pwEnabled, setPwEnabled] = useState(false);
 
   // Visibility radio — default to whatever the form has, fall back to "public"
@@ -40,27 +38,29 @@ export default function SharePage({ params }: SharePageProps) {
     if (form?.visibility) setVisibility(form.visibility as "public" | "unlisted");
   }, [form?.visibility]);
 
-  // ── RESPONSIVE SCALE ────────────────────────────────────────────
+  // ── RESPONSIVE CANVAS MONITOR SCALING ────────────────────────────
   const [scale, setScale] = useState(0.8);
 
   useEffect(() => {
-    const update = () => {
-      const scaleX = window.innerWidth  / 1250;
-      const scaleY = window.innerHeight / 900;
-      // Cap at 0.8 so large monitors stay pixel-perfect; shrink on small screens
-      setScale(Math.min(scaleX, scaleY, 0.8));
+    const handleResize = () => {
+      const baseWidth = 1525; // Standard dashboard desktop monitor breakpoint reference
+      const currentWidth = window.innerWidth;
+      // Multiplies dynamically against your target scale baseline
+      const calculatedScale = (currentWidth / baseWidth) * 0.8;
+      setScale(Math.max(calculatedScale, 0.45)); // Enforce a protective containment limit
     };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // ── DERIVED VALUES ──────────────────────────────────────────────
-  const slug       = form?.customSlug ?? form?.slug ?? "";
-  const formUrl    = `${APP}/f/${slug}`;
+  const slug = form?.customSlug ?? form?.slug ?? "";
+  const formUrl = `${APP}/f/${slug}`;
   const isPublished = form?.status === "published";
 
-  // ── HANDLERS (from file 2) ──────────────────────────────────────
+  // ── HANDLERS ─────────────────────────────────────────────────────
   function copyLink() {
     navigator.clipboard.writeText(formUrl);
     setCopied(true);
@@ -105,7 +105,6 @@ export default function SharePage({ params }: SharePageProps) {
     },
   ];
 
-  // ── LOADING STATE ───────────────────────────────────────────────
   if (isLoading) {
     return (
       <div style={{ backgroundColor: "#fdf6ed", width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -116,7 +115,6 @@ export default function SharePage({ params }: SharePageProps) {
     );
   }
 
-  // ── RENDER ──────────────────────────────────────────────────────
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", backgroundColor: "#fdf6ed", color: "#2d2416", overflow: "hidden" }}>
 
@@ -131,14 +129,14 @@ export default function SharePage({ params }: SharePageProps) {
         />
       </div>
 
-      {/* ── RESPONSIVE SCALE WRAPPER ── */}
+      {/* ── RESPONSIVE FIXED ART COORDINATE LAYER WRAPPER ── */}
       <div
         style={{
           position: "absolute",
           left: 0,
           top: 0,
-          width: "125vw",
-          height: "125vh",
+          width: "1920px",        // Firm layout system limits setup
+          height: "1080px",
           display: "flex",
           transform: `scale(${scale})`,
           transformOrigin: "top left",
@@ -223,7 +221,7 @@ export default function SharePage({ params }: SharePageProps) {
                 <div style={{ position: "relative", zIndex: 1, padding: "40px 40px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" }}>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#22c55e", color: "white", fontSize: "12px", fontWeight: "bold" }}>1</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyCenter: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#22c55e", color: "white", fontSize: "12px", fontWeight: "bold" }}>1</div>
                     <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "16px", fontWeight: "800", color: "#2d2416", margin: 0 }}>Publish Settings</h3>
                   </div>
 
@@ -231,9 +229,7 @@ export default function SharePage({ params }: SharePageProps) {
                     Choose how you want to share your form.
                   </p>
 
-                  {/* Visibility Radio Cards — wired to updateForm */}
                   <div style={{ display: "flex", gap: "16px", paddingLeft: "32px", marginBottom: "20px" }}>
-
                     {/* Public */}
                     <label
                       onClick={() => handleVisibilityChange("public")}
@@ -290,12 +286,11 @@ export default function SharePage({ params }: SharePageProps) {
                         </span>
                       </div>
                     </label>
-
                   </div>
 
                   <div style={{ height: "1px", backgroundColor: "rgba(200, 184, 160, 0.3)", width: "calc(100% - 32px)", marginLeft: "32px", marginBottom: "14px" }} />
 
-                  {/* Accept Responses Toggle — wired to publish/unpublish */}
+                  {/* Accept Responses Toggle */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingLeft: "32px", paddingRight: "12px", paddingTop: "23px" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
                       <span style={{ fontFamily: "'Caveat', cursive", fontSize: "13px", fontWeight: "800", color: "#2d2416" }}>Accept Responses</span>
@@ -304,7 +299,6 @@ export default function SharePage({ params }: SharePageProps) {
                       </span>
                     </div>
 
-                    {/* Toggle — green = published */}
                     <label style={{ position: "relative", display: "inline-block", width: "40px", height: "22px", cursor: "pointer" }}>
                       <input
                         type="checkbox"
@@ -339,17 +333,7 @@ export default function SharePage({ params }: SharePageProps) {
               </div>
 
               {/* ── DECORATION: Boy Holding Heart ── */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "280px",
-                  left: "185px",
-                  width: "505px",
-                  height: "180px",
-                  zIndex: 10,
-                  pointerEvents: "none",
-                }}
-              >
+              <div style={{ position: "absolute", top: "280px", left: "185px", width: "505px", height: "180px", zIndex: 10, pointerEvents: "none" }}>
                 <Image src="/boyholding.png" alt="Boy holding heart decoration" fill priority style={{ objectFit: "contain" }} />
               </div>
 
@@ -368,7 +352,6 @@ export default function SharePage({ params }: SharePageProps) {
                     Copy the link or share it directly.
                   </p>
 
-                  {/* Link input + copy button */}
                   <div style={{ paddingLeft: "32px", marginBottom: "20px", width: "100%", boxSizing: "border-box" }}>
                     <ScribbleCustomInput
                       type="text"
@@ -423,24 +406,13 @@ export default function SharePage({ params }: SharePageProps) {
               </div>
 
               {/* ── CARDS 3 & 4: QR + LIMITS ── */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "330px 390px",
-                  gap: "20px",
-                  width: "100%",
-                  height: "180px",
-                  marginLeft: "23px",
-                  flexShrink: 0,
-                  marginBottom: "4px",
-                }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "330px 390px", gap: "20px", width: "100%", height: "180px", marginLeft: "23px", flexShrink: 0, marginBottom: "4px" }}>
                 {/* QR Code Card */}
                 <div style={{ position: "relative", width: "100%", height: "100%" }}>
                   <Image src="/sharebottomleft.png" alt="QR code container" fill priority style={{ objectFit: "fill" }} />
 
                   <div style={{ position: "relative", zIndex: 1, padding: "23px 35px", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" }}>
-                    <span style={{ fontFamily: "'Caveat', cursive", fontSize: "12px", fontWeight: "800", color: "#2d2416", marginBottom: "8px",marginTop:"12px" }}>
+                    <span style={{ fontFamily: "'Caveat', cursive", fontSize: "12px", fontWeight: "800", color: "#2d2416", marginBottom: "8px", marginTop: "12px" }}>
                       Scan QR Code
                     </span>
 
@@ -456,7 +428,7 @@ export default function SharePage({ params }: SharePageProps) {
                   </div>
                 </div>
 
-                {/* Response Limit + Expiry Card — wired to updateForm */}
+                {/* Response Limit + Expiry Card */}
                 <div style={{ position: "relative", width: "100%", height: "100%" }}>
                   <Image src="/shareBottomRight.png" alt="Form limits container" fill priority style={{ objectFit: "fill" }} />
 
@@ -492,7 +464,6 @@ export default function SharePage({ params }: SharePageProps) {
                       />
                     </div>
 
-                    {/* Password protect — from file 2 */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
                       <label style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "#2d2416" }}>
                         Password Protect
@@ -538,37 +509,16 @@ export default function SharePage({ params }: SharePageProps) {
             </div>
 
             {/* ── RIGHT COLUMN ── */}
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                paddingRight: "16px",
-                overflowY: "auto",
-                overflowX: "hidden",
-                boxSizing: "border-box",
-              }}
-            >
+            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", paddingRight: "16px", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" }}>
               {/* Live form preview image */}
               <div style={{ position: "relative", width: "100%", flexShrink: 0, filter: "drop-shadow(0px 4px 8px rgba(45,36,22,0.04))" }}>
                 <Image src="/shareform.png" alt="Live form preview" width={550} height={560} priority style={{ objectFit: "contain" }} />
               </div>
 
               {/* You're all set card */}
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "240px",
-                  flexShrink: 0,
-                  marginTop: "23px",
-                  filter: "drop-shadow(0px 3px 6px rgba(0,0,0,0.05))",
-                }}
-              >
+              <div style={{ position: "relative", width: "100%", height: "240px", flexShrink: 0, marginTop: "23px", filter: "drop-shadow(0px 3px 6px rgba(0,0,0,0.05))" }}>
                 <Image src="/sharebottomCard.png" alt="You're all set!" fill priority style={{ objectFit: "contain" }} />
 
-                {/* Invisible clickable button over the image's CTA area */}
                 <button
                   onClick={() => {
                     if (isPublished) {

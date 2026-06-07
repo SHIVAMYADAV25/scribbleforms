@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, use } from "react";
 import Sidebar from "~/components/Sidebar";
 import { ArrowLeft, Calendar } from "lucide-react";
 import Image from "next/image";
@@ -19,7 +19,7 @@ function SkeletonCard({ height = 120 }: { height?: number }) {
 // ─── ERROR STATE ──────────────────────────────────────────────────────────────
 function ErrorState({ message }: { message: string }) {
   return (
-    <div style={{ width: "100%", height: "100%", minHeight: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: 10, padding: 16 }}>
+    <div style={{ width: "1420px", height: "100%", minHeight: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: 10, padding: 16 }}>
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e57373" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
       <p style={{ color: "#2d2416", fontWeight: 700, fontSize: 13, margin: 0, fontFamily: "'Nunito', sans-serif" }}>Failed to load analytics</p>
       <p style={{ color: "rgba(45,36,22,0.5)", fontSize: 11, margin: 0, textAlign: "center", fontFamily: "'Nunito', sans-serif" }}>{message}</p>
@@ -67,7 +67,7 @@ function Sparkline({
   );
 }
 
-// ─── KPI CARD — ORIGINAL STRUCTURE (3 small, last big) ───────────────────────
+// ─── KPI CARD ─────────────────────────────────────────────────────────────────
 function KPICard({
   label, value, diffDisplay, up, prevLabel, iconColor, iconBg, iconPath, sparkData, sparkColor, wide
 }: {
@@ -90,7 +90,6 @@ function KPICard({
       ...(wide ? { width: "300px" } : {}),
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-        {/* Icon circle */}
         <div style={{
           marginBottom: "28px",
           width: "40px", height: "40px", borderRadius: "50%",
@@ -102,7 +101,6 @@ function KPICard({
             {iconPath}
           </svg>
         </div>
-        {/* Text */}
         <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontFamily: "'Nunito', sans-serif" }}>
           <span style={{ fontSize: "16px", fontWeight: 500, fontFamily: "'Caveat', cursive" }}>{label}</span>
           <span style={{ marginBottom: "8px", fontFamily: "'Caveat', cursive", fontSize: "24px", fontWeight: "800", color: "#1a150e", lineHeight: 1.1 }}>{value}</span>
@@ -121,7 +119,6 @@ function KPICard({
           <span style={{ fontSize: "10px", color: "rgba(45,36,22,0.4)", fontWeight: 600 }}>{prevLabel}</span>
         </div>
       </div>
-      {/* Sparkline */}
       <Sparkline data={sparkData} color={sparkColor} width={45} height={30} />
     </div>
   );
@@ -167,27 +164,21 @@ function LineChart({ data }: { data: { date: string; count: number }[] }) {
           <stop offset="100%" stopColor="#634cc9" stopOpacity="0.00" />
         </linearGradient>
       </defs>
-      {/* Grid lines */}
       {ticks.map((v) => (
         <g key={v}>
           <line x1={pL} y1={yTick(v)} x2={W - pR} y2={yTick(v)} stroke="rgba(45,36,22,0.06)" strokeWidth="0.8" strokeDasharray={v === 0 ? "none" : "3,3"} />
           <text x={pL - 5} y={yTick(v) + 4} textAnchor="end" fontSize="9" fill="rgba(45,36,22,0.45)" fontFamily="'Nunito', sans-serif" fontWeight="700">{v}</text>
         </g>
       ))}
-      {/* Baseline */}
       <line x1={pL - 3} y1={pT + cH} x2={W - pR} y2={pT + cH} stroke="rgba(45,36,22,0.2)" strokeWidth="1.2" strokeLinecap="round" />
-      {/* Area */}
       <path d={areaPath} fill="url(#areaGrad)" />
-      {/* Line */}
       <path d={linePath} fill="none" stroke="#634cc9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Points */}
       {pts.map((p, i) => (
         <g key={i}>
           <circle cx={p.x} cy={p.y} r="4" fill="#634cc9" stroke="white" strokeWidth="1.5" style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.15))" }} />
           <circle cx={p.x - 1.2} cy={p.y - 1.2} r="1.2" fill="white" opacity="0.85" />
         </g>
       ))}
-      {/* X labels */}
       {xLabelPts.map((p, i) => (
         <text key={i} x={p.x} y={H - 3} textAnchor="middle" fontSize="8" fill="rgba(45,36,22,0.5)" fontFamily="'Nunito', sans-serif" fontWeight="700">{fmtDate(p.label)}</text>
       ))}
@@ -211,7 +202,6 @@ function CompletionFunnel({ data, dropOffRate }: { data: { stage: string; count:
   return (
     <div style={{ display: "flex", alignItems: "center", position: "relative", width: "100%", height: "210px", marginTop: "5px" }}>
       <svg width="180" height="210" viewBox="0 0 180 210" style={{ overflow: "visible", zIndex: 2 }}>
-        {/* ── STAGE 1: VIEWED (TOP) ── */}
         {stages[0] && (
           <g>
             <path d="M 10 20 L 170 20 L 146 70 L 34 70 Z" fill={colors[0]!.fill} fillOpacity="0.85" stroke="#2d2416" strokeWidth="1.3" strokeLinejoin="round" />
@@ -221,7 +211,6 @@ function CompletionFunnel({ data, dropOffRate }: { data: { stage: string; count:
           </g>
         )}
 
-        {/* ── STAGE 2: STARTED (MID) ── */}
         {stages[1] && (
           <g transform="translate(0, 4)">
             <path d="M 36 74 L 144 74 L 126 124 L 54 124 Z" fill={colors[1]!.fill} fillOpacity="0.85" stroke="#2d2416" strokeWidth="1.3" strokeLinejoin="round" />
@@ -231,7 +220,6 @@ function CompletionFunnel({ data, dropOffRate }: { data: { stage: string; count:
           </g>
         )}
 
-        {/* ── STAGE 3: COMPLETED (BOTTOM) ── */}
         {stages[2] && (
           <g transform="translate(0, 8)">
             <path d="M 56 128 L 124 128 L 110 178 L 70 178 Z" fill={colors[2]!.fill} fillOpacity="0.85" stroke="#2d2416" strokeWidth="1.3" strokeLinejoin="round" />
@@ -241,29 +229,26 @@ function CompletionFunnel({ data, dropOffRate }: { data: { stage: string; count:
           </g>
         )}
 
-        {/* ── CONVERSION ARROW 1→2 ── */}
         {conv12 !== null && (
-          <g transform="translate(155, 40)">
-            <path d="M 0 0 Q 12 12, 4 22" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
-            <path d="M 1 18 L 4 22 L 7 15" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
-            <text x="14" y="12" fill="#2d2416" fontSize="12" fontWeight="bold" fontFamily="'Nunito', sans-serif">{conv12}%</text>
+          <g transform="translate(154, 54)">
+            <path d="M 0 0 Q 20 18 8 38" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" />
+            <path d="M -2 32 L 8 38 L 17 32" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            <text x="24" y="18" fill="#2d2416" fontSize="12" fontWeight="bold" fontFamily="'Nunito', sans-serif">{conv12}%</text>
           </g>
         )}
 
-        {/* ── CONVERSION ARROW 2→3 ── */}
         {conv23 !== null && (
-          <g transform="translate(135, 96)">
-            <path d="M 0 0 Q 10 12, 2 22" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
-            <path d="M -1 18 L 2 22 L 5 15" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
-            <text x="12" y="12" fill="#2d2416" fontSize="12" fontWeight="bold" fontFamily="'Nunito', sans-serif">{conv23}%</text>
+          <g transform="translate(130, 110)">
+            <path d="M 0 0 Q 18 18 6 38" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" />
+            <path d="M -4 32 L 6 38 L 15 32" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            <text x="22" y="18" fill="#2d2416" fontSize="12" fontWeight="bold" fontFamily="'Nunito', sans-serif">{conv23}%</text>
           </g>
         )}
 
-        <path d="M 112 188 Q 125 192, 138 186" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
-        <path d="M 132 189 L 138 186 L 135 180" fill="none" stroke="#2d2416" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M 112 188 Q 125 192, 138 186" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M 131 183 L 138 186 L 134 193" fill="none" stroke="#2d2416" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
 
-      {/* ── DROP-OFF STICKY NOTE ── */}
       <div style={{
         position: "absolute", bottom: "6px", right: "-12px",
         width: "82px", height: "82px",
@@ -460,26 +445,8 @@ function SketchBarChart({ data }: SketchBarChartProps) {
 
       {yTicks.map((v) => (
         <g key={v}>
-          <line 
-            x1={pL} 
-            y1={toY(v)} 
-            x2={w - pR} 
-            y2={toY(v)} 
-            stroke={v === 0 ? "rgba(45, 36, 22, 0.18)" : "rgba(45, 36, 22, 0.04)"} 
-            strokeWidth={v === 0 ? "1.2" : "1"} 
-            strokeDasharray={v === 0 ? "none" : "3 3"} 
-          />
-          <text 
-            x={pL - 6} 
-            y={toY(v) + 4} 
-            textAnchor="end" 
-            fontSize="9" 
-            fontWeight="bold" 
-            fill="rgba(45,36,22,0.5)" 
-            fontFamily="'Nunito', sans-serif"
-          >
-            {v}
-          </text>
+          <line x1={pL} y1={toY(v)} x2={w - pR} y2={toY(v)} stroke={v === 0 ? "rgba(45, 36, 22, 0.18)" : "rgba(45, 36, 22, 0.04)"} strokeWidth={v === 0 ? "1.2" : "1"} strokeDasharray={v === 0 ? "none" : "3 3"} />
+          <text x={pL - 6} y={toY(v) + 4} textAnchor="end" fontSize="9" fontWeight="bold" fill="rgba(45,36,22,0.5)" fontFamily="'Nunito', sans-serif">{v}</text>
         </g>
       ))}
 
@@ -493,40 +460,9 @@ function SketchBarChart({ data }: SketchBarChartProps) {
 
         return (
           <g key={i}>
-            <text 
-              x={x} 
-              y={y - 4} 
-              textAnchor="middle" 
-              fontSize="11" 
-              fontWeight="800" 
-              fill="#5c6bc0" 
-              fontFamily="'Nunito', sans-serif"
-            >
-              {d.count}
-            </text>
-
-            <rect 
-              x={x - bW / 2} 
-              y={y} 
-              width={bW} 
-              height={Math.max(bh, 2)} 
-              fill="url(#barPencilScribble)"
-              stroke="#2d2416" 
-              strokeWidth="1.3" 
-              rx="3" 
-            />
-
-            <text 
-              x={x} 
-              y={h - 4} 
-              textAnchor="middle" 
-              fontSize="11" 
-              fontWeight="bold" 
-              fill="rgba(45, 36, 22, 0.55)" 
-              fontFamily="'Nunito', sans-serif"
-            >
-              {d.day}
-            </text>
+            <text x={x} y={y - 4} textAnchor="middle" fontSize="11" fontWeight="800" fill="#5c6bc0" fontFamily="'Nunito', sans-serif">{d.count}</text>
+            <rect x={x - bW / 2} y={y} width={bW} height={Math.max(bh, 2)} fill="url(#barPencilScribble)" stroke="#2d2416" strokeWidth="1.3" rx="3" />
+            <text x={x} y={h - 4} textAnchor="middle" fontSize="11" fontWeight="bold" fill="rgba(45, 36, 22, 0.55)" fontFamily="'Nunito', sans-serif">{d.day}</text>
           </g>
         );
       })}
@@ -602,6 +538,22 @@ function Insights({ data, prevPeriod, topSources, bestDay, avgMin, avgSec, dropO
 export default function AnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: formId } = use(params);
   const [timePeriod, setTimePeriod] = useState<"Daily" | "Weekly" | "Monthly">("Daily");
+  const [scale, setScale] = useState(0.8);
+
+  // Dynamic window monitor scaling logic mapping to original screen sizes 
+  useEffect(() => {
+    const handleResize = () => {
+      const baseWidth = 1525; // Original screen width reference baseline
+      const currentWidth = window.innerWidth;
+      // Calculate dynamic matrix transform against the default 0.8 template design scale
+      const calculatedScale = (currentWidth / baseWidth) * 0.8;
+      setScale(Math.max(calculatedScale, 0.45)); // Absolute limit containment boundaries
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const [dateRange] = useState(() => {
     const end = new Date();
@@ -662,6 +614,8 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
         up: rateDiff >= 0,
         prevLabel: `vs previous period (${prev.completionRate}%)`,
       },
+      totalViewsRaw: d.totalViews,
+      totalResponsesRaw: d.totalResponses,
       avgTime: {
         val: `${avgMin}m ${avgSec}s`,
         diffDisplay: `${Math.abs(timePct)}%`,
@@ -690,18 +644,18 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
         }
       `}</style>
 
-      {/* FIXED BASE ROOT CONTAINER: Locked absolute full screen frame clip */}
+      {/* FIXED BASE ROOT CONTAINER */}
       <div style={{ width: "100vw", height: "100vh", backgroundImage: "url('/analyitcs/analyticsBG.png')", backgroundSize: "100% 100%", backgroundPosition: "center", backgroundRepeat: "no-repeat", position: "fixed", top: 0, left: 0, overflow: "hidden", boxSizing: "border-box", fontFamily: "'Nunito', sans-serif" }}>
         
-        {/* TRANSFORMS LAYOUT VIEWBOX FRAME: Tied to dynamic view width/height to avoid push down */}
-        <div style={{ position: "absolute", top: 0, left: 0, width: "125vw", height: "125vh", display: "flex", transform: "scale(0.8)", transformOrigin: "top left", boxSizing: "border-box", overflow: "hidden" }}>
+        {/* TRANSFORMS LAYOUT VIEWBOX FRAME (Dynamically Responsive to Viewport Sizes) */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: "125vw", height: "125vh", display: "flex", transform: `scale(${scale})`, transformOrigin: "top left", boxSizing: "border-box", overflow: "hidden" }}>
 
           {/* SIDEBAR */}
           <div style={{ width: "240px", height: "100%", paddingLeft: "65px", paddingTop: "24px", display: "flex", flexDirection: "column", boxSizing: "border-box", flexShrink: 0 }}>
             <Sidebar activeTab="Analytics" />
           </div>
 
-          {/* MAIN FRAME: Strictly locks overflows out completely to guarantee fit */}
+          {/* MAIN FRAME */}
           <div className="a-main" style={{ flex: 1, height: "100%", padding: "24px 50px 24px 160px", display: "flex", flexDirection: "column", boxSizing: "border-box", overflow: "hidden" }}>
 
             {/* ── HEADER ── */}
@@ -744,149 +698,147 @@ export default function AnalyticsPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
-            {/* ── KPI CARDS ── */}
+            {/* ── RENDER CONDITION CONTROLLER BLOCK ── */}
             {isLoading ? (
-              <div className="a-grid-top" style={{ display: "grid", gridTemplateColumns: "repeat(4, 300px)", gap: "38px", marginBottom: "16px" }}>
-                {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} height={120} />)}
-              </div>
+              <>
+                <div className="a-grid-top" style={{ display: "grid", gridTemplateColumns: "repeat(4, 300px)", gap: "38px", marginBottom: "16px" }}>
+                  {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} height={120} />)}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "750px 240px 260px", gap: "38px", marginBottom: "16px" }}>
+                  {[0, 1, 2].map(i => <SkeletonCard key={i} height={260} />)}
+                </div>
+              </>
             ) : isError ? (
-              <div style={{ marginBottom: 16 }}><ErrorState message={(error as Error)?.message ?? "Unknown error"} /></div>
-            ) : kpiData ? (
-              <div className="a-grid-top" style={{ display: "grid", gridTemplateColumns: "repeat(4, 300px)", gap: "38px", marginBottom: "16px", width: "100%", boxSizing: "border-box" }}>
-                <KPICard
-                  label="Total Responses" value={kpiData.totalResponses.val}
-                  diffDisplay={kpiData.totalResponses.diffDisplay} up={kpiData.totalResponses.up}
-                  prevLabel={kpiData.totalResponses.prevLabel}
-                  iconColor="#7b1fa2" iconBg="#f3e5f5"
-                  iconPath={<><path d="M22 13h-4l-3 4H9l-3-4H2" /><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></>}
-                  sparkData={sparkData} sparkColor="#7b1fa2"
-                />
-                <KPICard
-                  label="Total Views" value={kpiData.totalViews.val}
-                  diffDisplay={kpiData.totalViews.diffDisplay} up={kpiData.totalViews.up}
-                  prevLabel={kpiData.totalViews.prevLabel}
-                  iconColor="#0288d1" iconBg="#e1f5fe"
-                  iconPath={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
-                  sparkData={sparkData} sparkColor="#0288d1"
-                />
-                <KPICard
-                  label="Completion Rate" value={kpiData.completionRate.val}
-                  diffDisplay={kpiData.completionRate.diffDisplay} up={kpiData.completionRate.up}
-                  prevLabel={kpiData.completionRate.prevLabel}
-                  iconColor="#2e7d32" iconBg="#e8f5e9"
-                  iconPath={<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>}
-                  sparkData={sparkData} sparkColor="#2e7d32"
-                />
-                <KPICard
-                  label="Avg. Time to Complete" value={kpiData.avgTime.val}
-                  diffDisplay={kpiData.avgTime.diffDisplay} up={kpiData.avgTime.up}
-                  prevLabel={kpiData.avgTime.prevLabel}
-                  iconColor="#ef6c00" iconBg="#fff3e0"
-                  iconPath={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>}
-                  sparkData={sparkData} sparkColor="#ef6c00"
-                  wide
-                />
+              <ErrorState message={(error as Error)?.message ?? "Unknown error"} />
+            ) : kpiData && kpiData.totalViewsRaw === 0 && kpiData.totalResponsesRaw === 0 ? (
+              /* Playful Empty State Frame */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "400px", border: "2px dashed rgba(45,36,22,0.15)", borderRadius: "12px", backgroundColor: "rgba(255,255,255,0.4)", width: "1330px", padding: "40px" }}>
+                <div style={{ width: "120px", height: "120px", position: "relative", marginBottom: "12px", opacity: 0.7 }}>
+                  <Image src="/analyitcs/Boy.png" alt="Empty pad mascot doodle" fill style={{ objectFit: "contain" }} />
+                </div>
+                <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "24px", fontWeight: "bold", color: "#2d2416", margin: 0 }}>This page is clean ink! 🪶</h3>
+                <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: "13px", color: "rgba(45,36,22,0.5)", margin: "4px 0 0 0", textAlign: "center" }}>No views or responses tracked yet. Give your form link a share to gather analytics!</p>
               </div>
-            ) : null}
-
-            {/* ── MIDDLE ROW ── */}
-            {isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "750px 240px 260px", gap: "38px", marginBottom: "16px" }}>
-                {[0,1,2].map(i => <SkeletonCard key={i} height={260} />)}
-              </div>
-            ) : analyticsPayload ? (
-              <div className="a-grid-mid" style={{ display: "grid", gridTemplateColumns: "750px 240px 260px", gap: "38px", marginBottom: "16px", width: "100%" }}>
-                {/* Line chart */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-                      </svg>
-                      <h3 style={{ fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: 0, fontFamily: "'Nunito', sans-serif" }}>Responses Over Time 🌿</h3>
-                    </div>
-                    <div style={{ display: "flex", border: "1px solid rgba(45,36,22,0.15)", padding: "3px 4px", borderRadius: "8px", backgroundColor: "rgba(255,255,255,0.5)", gap: "2px" }}>
-                      {(["Daily", "Weekly", "Monthly"] as const).map((tab) => {
-                        const active = timePeriod === tab;
-                        return (
-                          <button key={tab} onClick={() => setTimePeriod(tab)} style={{ padding: "4px 12px", fontSize: "12px", fontWeight: "bold", border: active ? "1px solid rgba(99,76,201,0.15)" : "1px solid transparent", background: active ? "#e1bee7" : "transparent", borderRadius: "6px", cursor: "pointer", color: active ? "#2d2416" : "rgba(45,36,22,0.5)", fontFamily: "'Nunito', sans-serif", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none" }}>
-                            {tab}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1, minHeight: "150px", position: "relative", marginTop: "6px" }}>
-                    <LineChart data={analyticsPayload.responsesOverTime ?? []} />
-                  </div>
-                </div>
-
-                {/* Completion funnel */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", position: "relative", width: "260px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "6px" }}>
-                    <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: 0 }}>Completion Funnel</h3>
-                    <span style={{ fontSize: "12px", opacity: 0.6 }}>✦</span>
-                  </div>
-                  <CompletionFunnel data={analyticsPayload.completionFunnel ?? []} dropOffRate={analyticsPayload.dropOffRate ?? 0} />
-                </div>
-
-                {/* Top traffic sources */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", width: "280px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", position: "relative", fontFamily: "'Caveat', cursive", marginLeft: "60px" }}>
-                  <h3 style={{ fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: "0 0 6px 0" }}>Top Traffic Sources</h3>
-                  <TrafficSources sources={analyticsPayload.topSources ?? []} />
-                </div>
-              </div>
-            ) : null}
-
-            {/* ── BOTTOM ROW ── */}
-            {isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "400px 640px 400px", gap: "18px" }}>
-                {[0,1,2].map(i => <SkeletonCard key={i} height={200} />)}
-              </div>
-            ) : analyticsPayload ? (
-              <div className="a-grid-bot" style={{ display: "grid", gridTemplateColumns: "400px 640px 400px", gap: "18px" }}>
-                {/* Device breakdown */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", fontFamily: "'Nunito', sans-serif" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a150e", margin: "0 0 12px 0", textAlign: "left" }}>Device Breakdown</h3>
-                  <DeviceBreakdown breakdown={analyticsPayload.deviceBreakdown} />
-                </div>
-
-                {/* Bar chart */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", fontFamily: "'Nunito', sans-serif" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a150e", margin: "0 0 12px 0", textAlign: "left" }}>Responses by Day of Week</h3>
-                  <SketchBarChart data={analyticsPayload.responsesByDayOfWeek ?? []} />
-                </div>
-
-                {/* Insights sticky note */}
-                <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "4px", padding: "16px 20px", boxShadow: "3px 4px 10px rgba(45,36,22,0.06)", position: "relative", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {/* Blue tape */}
-                  <div style={{ position: "absolute", top: "-10px", left: "20px", width: "55px", height: "18px", backgroundColor: "#b3e5fc", opacity: 0.7, transform: "rotate(-3deg)", borderLeft: "1px dashed rgba(0,0,0,0.1)", borderRight: "1px dashed rgba(0,0,0,0.1)" }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#2d2416", margin: 0, fontFamily: "'Caveat', cursive" }}>Insights</h3>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
-                      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" />
-                      <line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" />
-                    </svg>
-                  </div>
-                  <Insights
-                    data={analyticsPayload}
-                    prevPeriod={analyticsPayload.previousPeriod}
-                    topSources={analyticsPayload.topSources ?? []}
-                    bestDay={bestDay}
-                    avgMin={kpiData?.avgMin ?? 0}
-                    avgSec={kpiData?.avgSec ?? 0}
-                    dropOffRate={analyticsPayload.dropOffRate ?? 0}
-                    completionRate={analyticsPayload.completionRate ?? 0}
-                    responsesGrowthPct={kpiData?.respPct ?? 0}
-                    viewsGrowthPct={kpiData?.viewsPct ?? 0}
+            ) : kpiData && analyticsPayload ? (
+              <>
+                {/* ── KPI CARDS ── */}
+                <div className="a-grid-top" style={{ display: "grid", gridTemplateColumns: "repeat(4, 300px)", gap: "38px", marginBottom: "16px", width: "100%", boxSizing: "border-box" }}>
+                  <KPICard
+                    label="Total Responses" value={kpiData.totalResponses.val}
+                    diffDisplay={kpiData.totalResponses.diffDisplay} up={kpiData.totalResponses.up}
+                    prevLabel={kpiData.totalResponses.prevLabel}
+                    iconColor="#7b1fa2" iconBg="#f3e5f5"
+                    iconPath={<><path d="M22 13h-4l-3 4H9l-3-4H2" /><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></>}
+                    sparkData={sparkData} sparkColor="#7b1fa2"
                   />
-                  <div style={{ position: "absolute", bottom: "8px", right: "12px", opacity: 0.4, fontSize: "12px" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
+                  <KPICard
+                    label="Total Views" value={kpiData.totalViews.val}
+                    diffDisplay={kpiData.totalViews.diffDisplay} up={kpiData.totalViews.up}
+                    prevLabel={kpiData.totalViews.prevLabel}
+                    iconColor="#0288d1" iconBg="#e1f5fe"
+                    iconPath={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
+                    sparkData={sparkData} sparkColor="#0288d1"
+                  />
+                  <KPICard
+                    label="Completion Rate" value={kpiData.completionRate.val}
+                    diffDisplay={kpiData.completionRate.diffDisplay} up={kpiData.completionRate.up}
+                    prevLabel={kpiData.completionRate.prevLabel}
+                    iconColor="#2e7d32" iconBg="#e8f5e9"
+                    iconPath={<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>}
+                    sparkData={sparkData} sparkColor="#2e7d32"
+                  />
+                  <KPICard
+                    label="Avg. Time to Complete" value={kpiData.avgTime.val}
+                    diffDisplay={kpiData.avgTime.diffDisplay} up={kpiData.avgTime.up}
+                    prevLabel={kpiData.avgTime.prevLabel}
+                    iconColor="#ef6c00" iconBg="#fff3e0"
+                    iconPath={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>}
+                    sparkData={sparkData} sparkColor="#ef6c00"
+                    wide
+                  />
+                </div>
+
+                {/* ── MIDDLE ROW ── */}
+                <div className="a-grid-mid" style={{ display: "grid", gridTemplateColumns: "750px 240px 260px", gap: "38px", marginBottom: "16px", width: "100%" }}>
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        <h3 style={{ fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: 0, fontFamily: "'Nunito', sans-serif" }}>Responses Over Time 🌿</h3>
+                      </div>
+                      <div style={{ display: "flex", border: "1px solid rgba(45,36,22,0.15)", padding: "3px 4px", borderRadius: "8px", backgroundColor: "rgba(255,255,255,0.5)", gap: "2px" }}>
+                        {(["Daily", "Weekly", "Monthly"] as const).map((tab) => {
+                          const active = timePeriod === tab;
+                          return (
+                            <button key={tab} onClick={() => setTimePeriod(tab)} style={{ padding: "4px 12px", fontSize: "12px", fontWeight: "bold", border: active ? "1px solid rgba(99,76,201,0.15)" : "1px solid transparent", background: active ? "#e1bee7" : "transparent", borderRadius: "6px", cursor: "pointer", color: active ? "#2d2416" : "rgba(45,36,22,0.5)", fontFamily: "'Nunito', sans-serif", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none" }}>
+                              {tab}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minHeight: "150px", position: "relative", marginTop: "6px" }}>
+                      <LineChart data={analyticsPayload.responsesOverTime ?? []} />
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", position: "relative", width: "260px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "6px" }}>
+                      <h3 style={{ fontFamily: "'Caveat', cursive", fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: 0 }}>Completion Funnel</h3>
+                      <span style={{ fontSize: "12px", opacity: 0.6 }}>✦</span>
+                    </div>
+                    <CompletionFunnel data={analyticsPayload.completionFunnel ?? []} dropOffRate={analyticsPayload.dropOffRate ?? 0} />
+                  </div>
+
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", width: "280px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", position: "relative", fontFamily: "'Caveat', cursive", marginLeft: "60px" }}>
+                    <h3 style={{ fontSize: "15px", fontWeight: "bold", color: "#2d2416", margin: "0 0 6px 0" }}>Top Traffic Sources</h3>
+                    <TrafficSources sources={analyticsPayload.topSources ?? []} />
                   </div>
                 </div>
-              </div>
+
+                {/* ── BOTTOM ROW ── */}
+                <div className="a-grid-bot" style={{ display: "grid", gridTemplateColumns: "400px 640px 400px", gap: "18px" }}>
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", fontFamily: "'Nunito', sans-serif" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a150e", margin: "0 0 12px 0", textAlign: "left" }}>Device Breakdown</h3>
+                    <DeviceBreakdown breakdown={analyticsPayload.deviceBreakdown} />
+                  </div>
+
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "12px", padding: "14px 20px", display: "flex", flexDirection: "column", boxShadow: "0 2px 4px rgba(0,0,0,0.01)", fontFamily: "'Nunito', sans-serif" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a150e", margin: "0 0 12px 0", textAlign: "left" }}>Responses by Day of Week</h3>
+                    <SketchBarChart data={analyticsPayload.responsesByDayOfWeek ?? []} />
+                  </div>
+
+                  <div style={{ backgroundColor: "#FFFDF8", border: "1px solid #e1dbcf", borderRadius: "4px", padding: "16px 20px", boxShadow: "3px 4px 10px rgba(45,36,22,0.06)", position: "relative", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div style={{ position: "absolute", top: "-10px", left: "20px", width: "55px", height: "18px", backgroundColor: "#b3e5fc", opacity: 0.7, transform: "rotate(-3deg)", borderLeft: "1px dashed rgba(0,0,0,0.1)", borderRight: "1px dashed rgba(0,0,0,0.1)" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                      <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#2d2416", margin: 0, fontFamily: "'Caveat', cursive" }}>Insights</h3>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5" />
+                        <line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" />
+                      </svg>
+                    </div>
+                    <Insights
+                      data={analyticsPayload}
+                      prevPeriod={analyticsPayload.previousPeriod}
+                      topSources={analyticsPayload.topSources ?? []}
+                      bestDay={bestDay}
+                      avgMin={kpiData?.avgMin ?? 0}
+                      avgSec={kpiData?.avgSec ?? 0}
+                      dropOffRate={analyticsPayload.dropOffRate ?? 0}
+                      completionRate={analyticsPayload.completionRate ?? 0}
+                      responsesGrowthPct={kpiData?.respPct ?? 0}
+                      viewsGrowthPct={kpiData?.viewsPct ?? 0}
+                    />
+                    <div style={{ position: "absolute", bottom: "8px", right: "12px", opacity: 0.4, fontSize: "12px" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2d2416" strokeWidth="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </>
             ) : null}
 
           </div>

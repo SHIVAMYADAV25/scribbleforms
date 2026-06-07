@@ -3,47 +3,47 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
-import { useLogin } from '~/hooks/api'; // Replace with your actual hook
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useLogin } from '~/hooks/api/auth'; 
 import { ScribbleButton } from '~/components/scribble/ScribbleButton';
 import { ScribbleCustomButton, ScribbleCustomInput } from '~/components/scribble/ScribInput';
+import Link from 'next/link';
 
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
+const loginValidationSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginValidationSchema>;
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export default function LoginPage() {
   const loginMut = useLogin();
-  const [showPass, setShowPass] = useState(false);
+  const [showPass] = useState(false);
   const [remember, setRemember] = useState(true);
   
-  // Controls the dynamic window matrix sizing 
-  const [scaleFactor, setScaleFactor] = useState(0.80);
+  // Base scale state variable
+  const [scaleFactor, setScaleFactor] = useState(0.90);
 
   useEffect(() => {
     function handleResize() {
       const width = window.innerWidth;
       const height = window.innerHeight;
       
-      // 1. Increased baseline multiplier from 0.90 to 1.02 to scale the whole layout up
+      // ── FIXED RESPONSIVE ASPECT MATRICES ──
+      // Tracks the ideal ratio using 1440x900 base canvas guides
       let targetScale = (width / 1440) * 1.02;
-      
-      // 2. Raised maximum ceiling so it can expand properly on wider monitors
       if (targetScale > 1.05) targetScale = 1.05;
+      if (targetScale < 0.65) targetScale = 0.65; // Extended floor limit lets it scale smoothly down on tabs/small screens
 
-      // 3. Raised minimum floor so it never shrinks too small on standard screens/laptops
-      if (targetScale < 0.92) targetScale = 0.92;
-
-      // 4. Vertical height safety check (scaled up proportionately to match the new size)
       if (height < 900) {
         const heightScale = (height / 900) * 1.02; 
         if (heightScale < targetScale) {
-          targetScale = Math.max(0.92, heightScale); 
+          targetScale = Math.max(0.65, heightScale); 
         }
       }
-
       setScaleFactor(targetScale);
     }
 
@@ -56,7 +56,9 @@ export default function LoginPage() {
     register, 
     handleSubmit, 
     formState: { errors } 
-  } = useForm<LoginFormValues>();
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginValidationSchema)
+  });
 
   const onSubmit = handleSubmit((data) => {
     loginMut.mutate(data);
@@ -75,28 +77,23 @@ export default function LoginPage() {
         color: '#1e1608',
         alignItems: 'center',
         justifyContent: 'center',
-        // Expose scale variable down the DOM cascade branch
         // @ts-ignore
         '--global-scale': scaleFactor
       }}
     >
-      {/* Native dynamic typography engine engine pipeline */}
       <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
 
       {/* Global Notebook Base Frame Wrapper */}
       <div style={{
         display: 'flex',
-        width: '100%',
-        height: '100%',
+        width: '1440px', // Locked pixel baseline context guarantees components stick exactly where they belong
+        height: '900px',
         position: 'relative',
         overflow: 'hidden',
-        maxWidth: '1440px',
-        margin: '0 auto',
-        paddingLeft: '60px',
-        /* Scaled cleanly into the targeted minimized view natively at 100% desktop scale */
+        flexShrink: 0,
         transform: `scale(${scaleFactor})`,
         transformOrigin: 'center center',
-        transition: 'transform 0.1s cubic-bezier(0.4, 0, 0.2, 1)'
+        transition: 'transform 0.05s linear'
       }}>
         
         {/* Background Notebook Base Backdrop Layer Asset */}
@@ -173,8 +170,7 @@ export default function LoginPage() {
             height: "600px",
             boxSizing: 'border-box'
           }}>
-          
-
+            
             <form onSubmit={onSubmit}>
               {/* Username/Email Interactive Field Wrapper */}
               <div style={{ marginBottom: '16px' ,width:"400px" , marginLeft:"70px" , marginTop:"60px"}}>
@@ -191,9 +187,10 @@ export default function LoginPage() {
                 </label>
 
                 <ScribbleCustomInput
-                  {...register('email', { required: 'Email is required' })}
+                  {...register('email')}
                   type="email"
                   placeholder="you@example.com"
+                  disabled={loginMut.isPending}
                   leftIcon={
                     <svg
                       width="16"
@@ -247,9 +244,10 @@ export default function LoginPage() {
                 </label>
 
                 <ScribbleCustomInput
-                  {...register('password', { required: 'Password is required' })}
+                  {...register('password')}
                   type={showPass ? 'text' : 'password'}
                   placeholder="••••••••"
+                  disabled={loginMut.isPending}
                   leftIcon={
                     <svg
                       width="16"
@@ -287,7 +285,7 @@ export default function LoginPage() {
 
               {/* Utility Form Configuration Row Block */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 12px',marginLeft:"70px" ,width:"400px"}}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Caveat', cursive", fontSize: 'calc(18px * var(--global-scale))', color: '#5a4a30', cursor: 'pointer', userSelect: 'none' }} onClick={() => setRemember(!remember)}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Caveat', cursive", fontSize: 'calc(18px * var(--global-scale))', color: '#5a4a30', cursor: 'pointer', userSelect: 'none' }} onClick={() => !loginMut.isPending && setRemember(!remember)}>
                   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                     {remember ? (
                       <>
@@ -300,17 +298,20 @@ export default function LoginPage() {
                   </svg>
                   Remember me
                 </label>
-                <a href="#" style={{ fontFamily: "'Caveat', cursive", fontSize: 'calc(18px * var(--global-scale))', color: '#7c5cbf', textDecoration: 'underline' }}>Forgot password?</a>
+                <Link href="/forgot-password" style={{ fontFamily: "'Caveat', cursive", fontSize: 'calc(18px * var(--global-scale))', color: '#7c5cbf', textDecoration: 'underline' }}>Forgot password?</Link>
               </div>
 
               {/* Primary Action Yellow Scribble Dashboard Login Button Block */}
               <ScribbleCustomButton
                 type="submit"
                 bg="#f8de7e"
+                disabled={loginMut.isPending}
                 style={{
                   width: '400px',
                   marginTop: '10px',
-                  marginLeft:"70px"
+                  marginLeft:"70px",
+                  cursor: loginMut.isPending ? 'not-allowed' : 'pointer',
+                  opacity: loginMut.isPending ? 0.8 : 1
                 }}
               >
                 <span
@@ -326,22 +327,24 @@ export default function LoginPage() {
                     marginBottom:"12px"
                   }}
                 >
-                  Login to Dashboard
+                  {loginMut.isPending ? "Signing in..." : "Login to Dashboard"}
 
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      d="M4 10h12M12 5l5 5-5 5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  {!loginMut.isPending && (
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        d="M4 10h12M12 5l5 5-5 5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </span>
               </ScribbleCustomButton>
 
@@ -352,9 +355,10 @@ export default function LoginPage() {
                 <div style={{ flex: 1, height: '6px', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'6\'%3E%3Cpath d=\'M0 3 Q 10 0, 20 3 T 40 3 T 60 3 T 80 3 T 100 3\' fill=\'none\' stroke=\'%239a8060\' stroke-width=\'1.2\' stroke-linecap=\'round\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', opacity: 0.3 }}></div>
               </div>
 
-              {/* White Scribbly Google Auth Connector Button */}
+              {/* White Scribbly Google Auth Connector Button linking back directly to API Redirect */}
               <ScribbleButton 
                 type="button" 
+                onClick={() => window.location.href = `${API}/auth/google/redirect`}
                 style={{
                   width: '400px',
                   marginLeft:"70px",
@@ -370,7 +374,7 @@ export default function LoginPage() {
                   background: 'none',
                   border: 'none',
                   padding: '9px 16px',
-                  cursor: 'pointer'
+                  cursor: loginMut.isPending ? 'not-allowed' : 'pointer'
                 }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" style={{ position: 'relative', zIndex: 2 }}>
@@ -382,11 +386,10 @@ export default function LoginPage() {
                 <span style={{ position: 'relative', zIndex: 2, fontSize: 'calc(20px * var(--global-scale))' }}>Continue with Google</span>
               </ScribbleButton>
 
-
             </form>
 
             <div style={{ textAlign: 'center', fontFamily: "'Caveat', cursive", fontSize: 'calc(18px * var(--global-scale))', color: '#5a4a30', marginTop: '24px' }}>
-              Don't have an account? <a href="/signup" style={{ color: '#7c5cbf', fontWeight: 700, textDecoration: 'underline' }}>Sign up here</a>
+              Don't have an account? <Link href="/signup" style={{ color: '#7c5cbf', fontWeight: 700, textDecoration: 'underline' }}>Sign up here</Link>
             </div>
           </div>
         </div>
