@@ -1,4 +1,4 @@
-// packages/trpc/server/routes/forms/repository.ts
+// FILE: packages/trpc/server/routes/forms/repository.ts
 import db from "@repo/database";
 import {
   eq, and, isNull, lt, gt, ilike, desc, sql, count, lte
@@ -21,7 +21,6 @@ function generateSlug(title: string): string {
 }
 
 function hashPassword(password: string): string {
-  // bcrypt: self-salting, slow hashing — safe against rainbow tables
   return hashSync(password, 10);
 }
 
@@ -55,7 +54,6 @@ export class FormRepository {
       theme = t ?? null;
     }
 
-    // Serialize Date fields to ISO strings so they match the Zod output schema
     const serializedFields = fields.map((f) => ({
       ...f,
       description: f.description ?? null,
@@ -80,11 +78,27 @@ export class FormRepository {
       createdAt:  theme.createdAt.toISOString(),
     } : null;
 
+    // FIX: include currentVersionId and version number so the builder header
+    // can display "v2" without a separate API call.
     return {
       ...this.toOutput(form),
-      fields: serializedFields,
-      theme:  serializedTheme,
+      fields:           serializedFields,
+      theme:            serializedTheme,
+      currentVersionId: form.currentVersionId ?? null,
+      version:          form.currentVersionId
+        ? await this._getVersionNumber(form.currentVersionId)
+        : undefined,
     };
+  }
+
+  // Helper: look up the human-readable version number for a given version UUID
+  async _getVersionNumber(versionId: string): Promise<number | undefined> {
+    const [ver] = await db
+      .select({ version: formVersionsTable.version })
+      .from(formVersionsTable)
+      .where(eq(formVersionsTable.id, versionId))
+      .limit(1);
+    return ver?.version;
   }
 
   async findByOwner(id: string, userId: string) {
@@ -127,7 +141,6 @@ export class FormRepository {
       .from(formsTable)
       .where(and(...conditions));
 
-    // Cursor pagination: use createdAt of the cursor form as the boundary
     if (opts.cursor) {
       const [cursorForm] = await db
         .select({ createdAt: formsTable.createdAt })
@@ -135,9 +148,6 @@ export class FormRepository {
         .where(eq(formsTable.id, opts.cursor))
         .limit(1);
       if (cursorForm) {
-        conditions.push(lte(formsTable.createdAt, cursorForm.createdAt) as any);
-        conditions.push(eq(formsTable.id, opts.cursor) as any);
-        // We want forms BEFORE this cursor (older), so use lt
         conditions[conditions.length - 2] = lt(formsTable.createdAt, cursorForm.createdAt) as any;
         conditions.pop();
       }
@@ -209,14 +219,12 @@ export class FormRepository {
   }
 
   async publish(id: string, userId: string) {
-    // Snapshot current fields into a version
     const fields = await db
       .select()
       .from(fieldsTable)
       .where(eq(fieldsTable.formId, id))
       .orderBy(fieldsTable.order);
 
-    // Find next version number
     const versions = await db
       .select({ version: formVersionsTable.version })
       .from(formVersionsTable)
@@ -281,7 +289,6 @@ export class FormRepository {
       })
       .returning();
 
-    // Copy fields
     const fields = await db
       .select()
       .from(fieldsTable)
