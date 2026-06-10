@@ -501,7 +501,7 @@ import React, { use, useState, useMemo, useEffect } from "react";
 import Sidebar from "~/components/Sidebar";
 import { ArrowLeft, Trash2, Calendar } from "lucide-react";
 import { useFormDetail } from "~/hooks/api/forms";
-import { useResponseList, useDeleteResponse } from "~/hooks/api";
+import { useResponseList, useDeleteResponse, useResponseDetail } from "~/hooks/api";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface Field {
@@ -789,6 +789,9 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
   const { data: responseData, isLoading: responseLoading, isError: responseError } = useResponseList(formId);
   const deleteResponse = useDeleteResponse(formId);
 
+  
+  
+
   const responses = useMemo<UserResponse[]>(() => {
     if (!responseData?.pages) return [];
     return responseData.pages.flatMap((p: any) => p.responses ?? []);
@@ -811,10 +814,15 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
     return filteredResponses.slice(startIdx, startIdx + itemsPerPage);
   }, [filteredResponses, currentPage]);
 
+  // FIX: was showing hardcoded fake answers. Now fetches the real response detail
+  // (including all answers) when a response is selected in the table.
+  const activeId = selectedId ?? paginatedResponses[0]?.id ?? null;
+  const { data: responseDetail, isLoading: detailLoading } = useResponseDetail(activeId ?? "", !!activeId);
+
   const activeInspectionRecord = useMemo(() => {
-    if (selectedId) return responses.find(r => r.id === selectedId) || null;
+    if (activeId) return responses.find(r => r.id === activeId) || null;
     return paginatedResponses[0] || null;
-  }, [responses, selectedId, paginatedResponses]);
+  }, [responses, activeId, paginatedResponses]);
 
   const toggleSelectAll = () => {
     const allCheckedOnPage = paginatedResponses.length > 0 && paginatedResponses.every(r => checkedRecords[r.id]);
@@ -1049,25 +1057,50 @@ export default function ResponsesPage({ params }: { params: Promise<{ id: string
                   </div>
 
                   <div style={{ display: "flex", gap: "24px", fontSize: "11px", color: "rgba(45,36,22,0.6)", marginBottom: "14px" }}>
-                    <div>GV<strong>Submitted on:</strong><br />{new Date(activeInspectionRecord.createdAt).toLocaleString()}</div>
-                    <div><strong>Time Taken:</strong><br />{Math.round(activeInspectionRecord.timeToCompleteMs / 1000)} seconds</div>
+                    <div><strong>Submitted on:</strong><br />{new Date(activeInspectionRecord.createdAt).toLocaleString()}</div>
+                    <div><strong>Time Taken:</strong><br />{activeInspectionRecord.timeToCompleteMs ? `${Math.round(activeInspectionRecord.timeToCompleteMs / 1000)}s` : "—"}</div>
                   </div>
 
-                  {/* Scrollable Answers List */}
-                  <div className="custom-scribble-scroll" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "8px" ,fontFamily: "'Caveat', cursive" }}>
-                    {formDetails?.fields?.map((field: any, i: number) => (
-                      <div key={field.id} style={{ border: "1px solid rgba(45,36,22,0.1)", borderRadius: "8px", padding: "10px", backgroundColor: "#fff", filter: "drop-shadow(1px 2px 3px rgba(45,36,22,0.02))" }}>
-                        <div style={{ fontSize: "11px", fontWeight: "bold", color: "rgba(45,36,22,0.5)", marginBottom: "2px" }}>{i + 1}. {field.label}</div>
-                        <div style={{ fontSize: "12px", fontWeight: "bold", color: "#2d2416" }}>
-                          {field.type === "email" && activeInspectionRecord.emailAnswer}
-                          {field.type === "short_text" && (activeInspectionRecord.nameAnswer || "JavaScript")}
-                          {field.type === "multi_select" && "React, Next.js, Express"}
-                          {field.type === "rating" && "⭐ 8 / 10"}
-                          {field.type === "long_text" && "I would construct an organic hand-sketched interface analytics layout renderer engine."}
-                          {field.type === "single_select" && "VS Code"}
-                        </div>
-                      </div>
-                    ))}
+                  {/* FIX: was showing hardcoded fake answers. Now reads from responseDetail.answers
+                      which contains the real submitted values, joined with the form field labels. */}
+                  <div className="custom-scribble-scroll" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", paddingRight: "8px", fontFamily: "'Caveat', cursive" }}>
+                    {detailLoading ? (
+                      <div style={{ textAlign: "center", color: "rgba(45,36,22,0.4)", fontSize: "14px", paddingTop: "20px" }}>Loading answers...</div>
+                    ) : responseDetail?.answers?.length ? (
+                      responseDetail.answers.map((ans: any, i: number) => {
+                        // Look up the field label from the form's current fields
+                        const field = formDetails?.fields?.find((f: any) => f.id === ans.fieldId);
+                        const label = field?.label ?? `Field ${i + 1}`;
+                        const fieldType = ans.fieldType ?? field?.type ?? "short_text";
+
+                        // Deserialize the stored answer value
+                        let displayValue: string;
+                        if (fieldType === "multi_select" && Array.isArray(ans.valueArray)) {
+                          displayValue = ans.valueArray.join(", ") || "—";
+                        } else if (fieldType === "rating" || fieldType === "number") {
+                          displayValue = ans.valueNumber != null ? String(ans.valueNumber) : "—";
+                        } else if (fieldType === "checkbox") {
+                          displayValue = ans.valueText === "true" ? "✓ Checked" : "✗ Unchecked";
+                        } else {
+                          displayValue = ans.valueText ?? "—";
+                        }
+
+                        return (
+                          <div key={ans.id ?? i} style={{ border: "1px solid rgba(45,36,22,0.1)", borderRadius: "8px", padding: "10px", backgroundColor: "#fff", filter: "drop-shadow(1px 2px 3px rgba(45,36,22,0.02))" }}>
+                            <div style={{ fontSize: "11px", fontWeight: "bold", color: "rgba(45,36,22,0.5)", marginBottom: "2px" }}>{i + 1}. {label}</div>
+                            <div style={{ fontSize: "13px", fontWeight: "bold", color: "#2d2416" }}>
+                              {fieldType === "rating" ? (
+                                <span>{Array.from({ length: Number(ans.valueNumber ?? 0) }).map(() => "⭐").join("")} {ans.valueNumber ?? 0}</span>
+                              ) : (
+                                displayValue
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ textAlign: "center", color: "rgba(45,36,22,0.4)", fontSize: "14px", paddingTop: "20px" }}>No answers recorded for this response.</div>
+                    )}
                   </div>
                 </>
               ) : (

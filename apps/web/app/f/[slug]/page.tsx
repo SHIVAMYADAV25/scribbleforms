@@ -940,7 +940,10 @@ function PasswordGate({
 const DefaultScribbleFormPage = ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug }  = use(params);
   const router    = useRouter();
-  const apiUrl    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  // FIX: strip /trpc suffix — NEXT_PUBLIC_API_URL may point to the tRPC endpoint
+  // but the form submit endpoint is at the Express root (/f/:slug/submit)
+  const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const apiUrl    = rawApiUrl.replace(/\/trpc\/?$/, "");
 
   // FIX: password state feeds into usePublicForm — was hardcoded "hackathon2025"
   const [password,    setPassword]    = useState<string | undefined>(undefined);

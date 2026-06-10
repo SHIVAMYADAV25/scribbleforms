@@ -345,8 +345,17 @@ export default function SharePage({ params }: SharePageProps) {
 
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
                       <label style={{ fontFamily: "'Caveat', cursive", fontSize: "11px", fontWeight: "800", color: "#2d2416" }}>Password Protect</label>
+                      {/* FIX: toggling OFF now sends password:null to clear the hash on the server.
+                          Previously only setPwEnabled(false) was called — the password stayed active. */}
                       <label style={{ position: "relative", display: "inline-block", width: "34px", height: "18px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={pwEnabled} onChange={e => setPwEnabled(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                        <input type="checkbox" checked={pwEnabled} onChange={e => {
+                          const enabled = e.target.checked;
+                          setPwEnabled(enabled);
+                          if (!enabled) {
+                            updateForm.mutate({ id: formId, data: { password: null } });
+                            toast.success("Password protection removed.");
+                          }
+                        }} style={{ opacity: 0, width: 0, height: 0 }} />
                         <span style={{ position: "absolute", inset: 0, backgroundColor: pwEnabled ? "#634cc9" : "#c8b8a0", borderRadius: "99px", transition: "0.2s" }}>
                           <span style={{ position: "absolute", left: "2px", bottom: "2px", backgroundColor: "white", width: "14px", height: "14px", borderRadius: "50%", transition: "0.2s", transform: pwEnabled ? "translateX(16px)" : "translateX(0)" }} />
                         </span>
